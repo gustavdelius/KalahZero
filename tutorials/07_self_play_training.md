@@ -96,6 +96,28 @@ def add_many(self, samples: list[TrainingSample]) -> None:
         del self.samples[:overflow]
 ```
 
+## Safe Interruption And Resume
+
+Long CPU runs should be interruptible. The training script periodically saves a
+checkpoint containing:
+
+- model weights,
+- optimizer state,
+- replay samples,
+- random-number generator state,
+- the training config,
+- and the number of completed self-play games.
+
+If you press `Ctrl+C`, the script saves before exiting. Resume with:
+
+```bash
+python scripts/train.py --resume checkpoints/overnight.pt
+```
+
+On resume, `--games` means the total number of games you want completed. For
+example, if a checkpoint has already completed 120 games, then `--games 300`
+continues from game 121 and stops after game 300.
+
 ## Practice
 
 Run:
@@ -106,4 +128,3 @@ python scripts/self_play.py --games 4 --simulations 25
 
 Then reduce `--simulations` to `1`. Explain why the generated targets are much
 less informative.
-

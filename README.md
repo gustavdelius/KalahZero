@@ -32,6 +32,18 @@ Run a tiny self-play/training loop:
 python scripts/train.py --games 4 --simulations 25 --epochs 2
 ```
 
+Longer training runs are resumable. The trainer saves periodic checkpoints and
+also saves when interrupted with `Ctrl+C`:
+
+```bash
+python scripts/train.py --games 300 --simulations 75 --epochs 1 --output checkpoints/overnight.pt
+python scripts/train.py --resume checkpoints/overnight.pt
+```
+
+Use `--checkpoint-every N` to control periodic saves. On resume, `--games`
+means the total number of games you want completed, not the number of additional
+games.
+
 Play against a baseline:
 
 ```bash

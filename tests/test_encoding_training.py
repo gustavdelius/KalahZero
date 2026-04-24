@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import unittest
+from pathlib import Path
+from tempfile import TemporaryDirectory
 
 from kalah_zero.encoding import encode_features, input_size
 from kalah_zero.game import GameState
@@ -57,7 +59,50 @@ class OptionalTorchTests(unittest.TestCase):
         self.assertEqual(len(policy), state.pits)
         self.assertTrue(-1.0 <= scalar <= 1.0)
 
+    def test_training_checkpoint_round_trip(self) -> None:
+        try:
+            import random
+            import sys
+
+            import torch
+            from kalah_zero.network import KalahNet
+
+            sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
+            from scripts.train import load_training_checkpoint, save_training_checkpoint
+        except ModuleNotFoundError:
+            self.skipTest("PyTorch is not installed")
+
+        rng = random.Random(123)
+        config = TrainConfig(simulations=1, games_per_iteration=3, batch_size=2, epochs=1, seed=123)
+        model = KalahNet(pits=config.pits)
+        optimizer = torch.optim.AdamW(model.parameters(), lr=config.learning_rate)
+        samples = self_play_game(UniformEvaluator(), config, rng)
+        buffer = ReplayBuffer(config.replay_capacity, rng=rng)
+        buffer.add_many(samples)
+
+        with TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "checkpoint.pt"
+            save_training_checkpoint(
+                path,
+                model,
+                optimizer,
+                buffer,
+                rng,
+                config,
+                completed_games=2,
+                reason="test",
+            )
+            loaded_model, loaded_optimizer, loaded_buffer, loaded_rng, loaded_config, completed_games = (
+                load_training_checkpoint(path)
+            )
+
+        self.assertEqual(loaded_model.pits, config.pits)
+        self.assertIsNotNone(loaded_optimizer)
+        self.assertIsNotNone(loaded_rng)
+        self.assertEqual(loaded_config.simulations, config.simulations)
+        self.assertEqual(completed_games, 2)
+        self.assertEqual(len(loaded_buffer), len(buffer))
+
 
 if __name__ == "__main__":
     unittest.main()
-

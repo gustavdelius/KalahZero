@@ -70,8 +70,7 @@ def save_checkpoint(path: str, model: KalahNet, optimizer=None, step: int = 0) -
 
 def load_checkpoint(path: str, device: str = "cpu") -> tuple[KalahNet, dict]:
     torch = _torch()
-    payload = torch.load(path, map_location=device)
+    payload = torch.load(path, map_location=device, weights_only=False)
     model = KalahNet(pits=payload.get("pits", 6)).to(device)
     model.load_state_dict(payload["model_state"])
     return model, payload
-
