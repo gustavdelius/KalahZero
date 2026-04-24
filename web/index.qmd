@@ -1,0 +1,68 @@
+---
+title: "Play Kalah"
+page-layout: full
+toc: false
+format:
+  html:
+    css: styles.css
+    include-after-body:
+      text: |
+        <script src="app.js"></script>
+---
+
+```{=html}
+<main class="app-shell">
+  <section class="topbar" aria-label="Game controls">
+    <div>
+      <p class="eyebrow">KalahZero</p>
+      <h1>Kalah</h1>
+    </div>
+    <div class="controls">
+      <label>
+        Opponent
+        <select id="opponent">
+          <option value="greedy" selected>Greedy</option>
+          <option value="random">Random</option>
+        </select>
+      </label>
+      <label>
+        You
+        <select id="human-player">
+          <option value="0" selected>South</option>
+          <option value="1">North</option>
+        </select>
+      </label>
+      <button id="new-game" type="button">New Game</button>
+    </div>
+  </section>
+
+  <section class="scorebar" aria-live="polite">
+    <div class="score-card north">
+      <span>North</span>
+      <strong id="score-north">0</strong>
+    </div>
+    <p id="status" class="status">South to move</p>
+    <div class="score-card south">
+      <span>South</span>
+      <strong id="score-south">0</strong>
+    </div>
+  </section>
+
+  <section class="board-wrap" aria-label="Kalah board">
+    <div class="board" id="board">
+      <div class="store store-north" id="store-north" aria-label="North store"></div>
+      <div class="pit-row north-row" id="north-row"></div>
+      <div class="pit-row south-row" id="south-row"></div>
+      <div class="store store-south" id="store-south" aria-label="South store"></div>
+    </div>
+  </section>
+
+  <section class="move-panel" aria-label="Move history">
+    <div>
+      <h2>Position</h2>
+      <p id="position-summary">Opening position</p>
+    </div>
+    <ol id="history" class="history"></ol>
+  </section>
+</main>
+```

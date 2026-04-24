@@ -41,10 +41,10 @@ python scripts/play_cli.py --agent greedy
 Open the graphical browser board:
 
 ```bash
-python -m http.server 8000
+quarto preview
 ```
 
-Then visit `http://localhost:8000/web/`.
+Then open the **Play** page in the navbar.
 
 Read the tutorials in order from `tutorials/01_kalah_rules.md`.
 

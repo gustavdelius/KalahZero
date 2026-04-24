@@ -14,6 +14,10 @@
   --focus: #1c6e9b;
 }
 
+#title-block-header {
+  display: none;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -370,4 +374,3 @@ select:focus-visible,
     justify-content: flex-start;
   }
 }
-

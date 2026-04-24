@@ -35,7 +35,7 @@ comes later.
 Play the browser version:
 
 ::: {.callout-note title="Graphical board"}
-Open [the Kalah web app](web/index.html) to play against the browser-side
+Open [the Kalah web app](web/index.qmd) to play against the browser-side
 baseline agents.
 :::
 

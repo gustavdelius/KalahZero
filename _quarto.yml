@@ -2,7 +2,8 @@ project:
   type: website
   output-dir: _site
   resources:
-    - "web/**"
+    - "web/app.js"
+    - "web/styles.css"
 
 website:
   title: "KalahZero"
@@ -18,7 +19,7 @@ website:
         text: Home
       - href: tutorials/index.qmd
         text: Tutorials
-      - href: web/index.html
+      - href: web/index.qmd
         text: Play
     right:
       - icon: github
