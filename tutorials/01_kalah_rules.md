@@ -156,6 +156,21 @@ $$
 \left[\sum_{i \in P_1} b_i = 0\right].
 $$
 
+When the game ends, remaining pit stones are swept into stores by ownership, not
+by who caused the ending. If player $0$ empties their side while player $1$
+still has stones, those remaining stones go to player $1$'s store:
+
+$$
+\operatorname{store}_p
+\leftarrow
+\operatorname{store}_p + \sum_{i \in P_p} b_i
+\qquad
+\text{for each } p \in \{0,1\}.
+$$
+
+So the player who makes the final move does not automatically collect all
+remaining stones. Each player collects the stones left on their own side.
+
 The final reward for player $p$ is:
 
 $$
