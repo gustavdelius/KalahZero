@@ -1,49 +1,122 @@
 # 02. Perfect-Information Games
 
-Kalah is deterministic, turn-based, and fully observable. In principle we can
-solve it by expanding a game tree.
+## Goal
 
-Each node is a state `s`. Each edge is an action `a`. Each leaf has a final
-reward `z`.
+This lesson connects Kalah to game-tree search. You will learn what a value
+function means before neural networks enter the story.
 
-## Value
+Kalah is a finite, deterministic, perfect-information game. That means:
 
-The value of a state for player `p` is:
+\[
+\text{next state} = T(s, a)
+\]
 
-```text
-V_p(s) = expected outcome for p from state s
+is known exactly, and both players observe the same state.
+
+## Game Trees
+
+A game tree alternates between states and actions:
+
+\[
+s_0 \xrightarrow{a_0} s_1 \xrightarrow{a_1} s_2
+\xrightarrow{a_2} \cdots \xrightarrow{a_{n-1}} s_n.
+\]
+
+At a terminal state \(s_n\), the reward is \(z_p(s_n)\) for player \(p\).
+The value of a nonterminal state is the outcome under some rule for choosing
+future moves.
+
+Under perfect play, the value for player \(p\) is:
+
+\[
+V_p^\*(s) =
+\begin{cases}
+z_p(s), & \operatorname{terminal}(s), \\
+\max_{a \in \mathcal{A}(s)} V_p^\*(T(s,a)), & \operatorname{player}(s)=p, \\
+\min_{a \in \mathcal{A}(s)} V_p^\*(T(s,a)), & \operatorname{player}(s)\ne p.
+\end{cases}
+\]
+
+The max line says "I choose my best move." The min line says "my opponent
+chooses the move worst for me."
+
+## Extra Turns
+
+Kalah has extra turns, so the player may not alternate after every move. The
+formula above still works because it checks \(\operatorname{player}(s)\) at the
+new state instead of assuming alternation.
+
+In code, minimax compares `state.current_player` with the original perspective:
+
+```python
+if state.current_player == perspective:
+    value = -math.inf
+    for action in state.legal_actions():
+        value = max(value, self._search(state.apply(action), depth - 1, perspective, alpha, beta))
+    return value
+
+value = math.inf
+for action in state.legal_actions():
+    value = min(value, self._search(state.apply(action), depth - 1, perspective, alpha, beta))
+return value
 ```
 
-With perfect play and no randomness, this becomes minimax:
+## Alpha-Beta Pruning
 
-```text
-V_p(s) = max_a V_p(T(s, a))  if p is to move
-V_p(s) = min_a V_p(T(s, a))  if opponent is to move
+Plain minimax expands roughly:
+
+\[
+1 + b + b^2 + \cdots + b^d
+= \frac{b^{d+1}-1}{b-1}
+= O(b^d),
+\]
+
+where \(b\) is branching factor and \(d\) is depth.
+
+Alpha-beta pruning keeps bounds:
+
+\[
+\alpha = \text{best value guaranteed for the maximizing player},
+\]
+
+\[
+\beta = \text{best value guaranteed for the minimizing player}.
+\]
+
+If \(\alpha \ge \beta\), the remaining branch cannot affect the final decision,
+so it can be skipped.
+
+```python
+alpha = max(alpha, value)
+if alpha >= beta:
+    break
 ```
 
-Extra turns matter: if a move leaves the same player to move, the next layer is
-still a maximizing layer for that same player.
+## Why This Is Not AlphaZero Yet
 
-## Why Not Exhaustive Search?
+Minimax asks:
 
-Kalah has a modest branching factor, usually at most 6, but games can last many
-moves. A depth `d` tree costs roughly:
+\[
+\text{"What happens if I search this tree deeply enough?"}
+\]
 
-```text
-O(b^d)
-```
+AlphaZero asks:
 
-Even `6^20` is too large for casual search.
+\[
+\text{"Can a neural network guide search, and can search train the network?"}
+\]
 
-## Code
+Minimax gives us the conceptual baseline: states have values, moves can be
+ranked, and exact search becomes expensive.
 
-`MinimaxAgent` in `src/kalah_zero/agents.py` implements depth-limited minimax
-with alpha-beta pruning. At a depth limit it uses a simple heuristic based on
-store and pit margins.
+## Practice
 
 Run:
 
 ```bash
 python scripts/evaluate.py --agent-a minimax --agent-b random --games 10
 ```
+
+Then change the minimax depth in `src/kalah_zero/agents.py` or pass a smaller
+depth in a small script. Predict how speed and strength should change.
 

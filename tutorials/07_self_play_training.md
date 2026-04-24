@@ -1,41 +1,109 @@
 # 07. Self-Play Training Loop
 
-AlphaZero learns from games against itself.
+## Goal
 
-At each move:
+This lesson explains how AlphaZero creates its own dataset. There is no database
+of expert Kalah games. The system improves by playing itself, searching, and
+training on the search results.
 
-1. Run MCTS from the current state.
-2. Store the state and normalized visit counts.
-3. Pick an action from the visit distribution.
-4. Continue until the game ends.
+One self-play game produces samples:
 
-At the end, every stored position receives the final game outcome from the
-perspective of the player who was to move there.
+\[
+\mathcal{D}_{\text{game}} =
+\{(s_t, \pi_t, z_t)\}_{t=0}^{T-1}.
+\]
 
-Each sample is:
+## At Each Move
 
-```text
-(s_t, pi_t, z_t)
+At time \(t\):
+
+1. Run MCTS from \(s_t\).
+2. Convert visit counts into a policy target \(\pi_t\).
+3. Pick an action \(a_t\).
+4. Apply the action to get \(s_{t+1}=T(s_t,a_t)\).
+
+The code is direct:
+
+```python
+while not state.is_terminal():
+    result = mcts.search(state, evaluator)
+    temperature = 1.0 if move_index < config.temperature_moves else 0.0
+    action = result.select_action(temperature=temperature, rng=rng)
+    trajectory.append((state, tuple(result.policy), state.current_player))
+    state = state.apply(action)
+    move_index += 1
 ```
 
-where:
+## Visit Counts Become Targets
 
-- `s_t` is the state.
-- `pi_t` is the MCTS visit-count policy.
-- `z_t` is the final outcome.
+The target policy is:
 
-## Temperature
+\[
+\pi_t(a) =
+\frac{N(s_t,a)^{1/\tau}}
+\sum_b N(s_t,b)^{1/\tau}},
+\]
 
-Early in the game, action selection samples from visit counts. Later it becomes
-greedy. This gives variety without making endgames unnecessarily noisy.
+where \(\tau\) is the temperature. In the code, temperature is used when
+selecting the played action. The stored policy remains the normalized visit
+distribution returned by search.
 
-## Code
+When \(\tau = 1\), actions are sampled roughly according to visits. As
+\(\tau \to 0\), selection becomes greedy:
 
-Read `self_play_game` in `src/kalah_zero/train.py`.
+\[
+a_t = \arg\max_a N(s_t,a).
+\]
+
+## Final Outcome Becomes Value Target
+
+After the terminal state \(s_T\), each earlier position receives:
+
+\[
+z_t = z_{p_t}(s_T),
+\]
+
+where \(p_t\) is the player to move at \(s_t\).
+
+Code:
+
+```python
+return [
+    TrainingSample(position, policy, state.reward_for_player(player))
+    for position, policy, player in trajectory
+]
+```
+
+This line is easy to miss. The value target is not "did player 0 win?" It is
+"did the player who was about to move in this position eventually win?"
+
+## Replay Buffer
+
+The replay buffer approximates a dataset:
+
+\[
+\mathcal{D} =
+\bigcup_i \mathcal{D}_{\text{game }i}.
+\]
+
+It has finite capacity, so old samples are dropped:
+
+```python
+def add_many(self, samples: list[TrainingSample]) -> None:
+    self.samples.extend(samples)
+    overflow = len(self.samples) - self.capacity
+    if overflow > 0:
+        del self.samples[:overflow]
+```
+
+## Practice
 
 Run:
 
 ```bash
 python scripts/self_play.py --games 4 --simulations 25
 ```
+
+Then reduce `--simulations` to `1`. Explain why the generated targets are much
+less informative.
 

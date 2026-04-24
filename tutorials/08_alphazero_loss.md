@@ -1,44 +1,121 @@
 # 08. AlphaZero Loss Derivation
 
-For one training example `(s, pi, z)`, the network predicts:
+## Goal
 
-```text
-(p, v) = f_theta(s)
-```
+This lesson derives the training objective. You will see why the network learns
+from two targets at once: the final winner and the search policy.
 
-The loss has three terms:
+For one sample:
 
-```text
-L = (z - v)^2 - sum_a pi_a log p_a + lambda ||theta||^2
-```
+\[
+(s, \pi, z),
+\]
+
+the network predicts:
+
+\[
+f_\theta(s) = (p_\theta, v_\theta).
+\]
+
+The AlphaZero-style loss is:
+
+\[
+\mathcal{L}(\theta)
+=
+(z - v_\theta(s))^2
+- \sum_a \pi(a \mid s)\log p_\theta(a \mid s)
++ \lambda \lVert \theta \rVert_2^2.
+\]
 
 ## Value Loss
 
-```text
-(z - v)^2
-```
+The value term is mean squared error:
 
-This trains the network to predict the final outcome.
+\[
+\mathcal{L}_{\text{value}}
+=
+(z - v_\theta(s))^2.
+\]
+
+If \(z=1\) and \(v_\theta(s)=0.2\), the loss contribution is:
+
+\[
+(1 - 0.2)^2 = 0.64.
+\]
+
+This teaches the network to predict who eventually wins.
 
 ## Policy Loss
 
-```text
-- sum_a pi_a log p_a
-```
+The policy target \(\pi\) comes from MCTS visit counts, not from a human. The
+cross-entropy term is:
 
-This is cross-entropy from the search policy `pi` to the network policy `p`.
-The target is not the raw move played; it is the stronger distribution produced
-by search.
+\[
+\mathcal{L}_{\text{policy}}
+=
+- \sum_a \pi(a \mid s)\log p_\theta(a \mid s).
+\]
+
+If search assigns most visits to action \(2\), the network is trained to make
+action \(2\) more likely next time. Search is therefore a policy improvement
+operator:
+
+\[
+p_\theta(\cdot \mid s)
+\xrightarrow{\text{MCTS}}
+\pi(\cdot \mid s)
+\xrightarrow{\text{training}}
+p_{\theta'}(\cdot \mid s).
+\]
 
 ## Regularization
 
-```text
-lambda ||theta||^2
+The regularizer is:
+
+\[
+\mathcal{L}_{\text{reg}}
+=
+\lambda \lVert \theta \rVert_2^2
+=
+\lambda \sum_i \theta_i^2.
+\]
+
+It discourages unnecessarily large weights.
+
+## Batch Loss In Code
+
+The implementation computes a minibatch average:
+
+```python
+states = torch.stack([encode_state(sample.state) for sample in batch])
+policy_targets = torch.tensor([sample.policy for sample in batch], dtype=torch.float32)
+value_targets = torch.tensor([sample.value for sample in batch], dtype=torch.float32)
+
+logits, values = model(states)
+policy_loss = -(policy_targets * F.log_softmax(logits, dim=1)).sum(dim=1).mean()
+value_loss = F.mse_loss(values, value_targets)
+loss = policy_loss + value_loss + l2_loss
 ```
 
-This discourages unnecessarily large weights.
+The network returns logits rather than probabilities. `log_softmax` computes:
 
-## Code
+\[
+\log p_\theta(a \mid s)
+=
+\ell_a - \log\sum_b e^{\ell_b}.
+\]
 
-Read `train_step` in `src/kalah_zero/train.py`.
+This is more numerically stable than applying `softmax` and then `log`.
+
+## Practice
+
+Run:
+
+```bash
+python scripts/train.py --games 4 --simulations 25 --epochs 2
+```
+
+Watch the policy and value losses separately. If the value loss drops while
+policy loss does not, the network may be learning winners faster than move
+preferences.
 

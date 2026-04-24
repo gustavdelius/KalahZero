@@ -9,6 +9,7 @@ description = "A teaching implementation of AlphaZero-style learning for Kalah."
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
+    "numpy>=1.26",
     "torch>=2.2",
 ]
 
@@ -23,4 +24,3 @@ where = ["src"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
-

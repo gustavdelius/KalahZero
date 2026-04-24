@@ -1,7 +1,26 @@
 # Tutorial Sequence
 
-Read these in order. Each tutorial introduces one mathematical idea and points
-to the code that implements it.
+These tutorials teach AlphaZero by building it for Kalah. Read them in order:
+each lesson introduces one mathematical idea, connects it to code, and ends
+with a small practice task.
+
+## How To Study
+
+For each tutorial:
+
+1. Read the goal and the mathematical object being introduced.
+2. Copy the code excerpt into your editor and find the full implementation.
+3. Run the suggested command.
+4. Change one small thing and predict what should happen before running again.
+
+The central loop is:
+
+\[
+\text{rules} \rightarrow \text{search} \rightarrow \text{targets} \rightarrow
+\text{neural network} \rightarrow \text{better search}.
+\]
+
+## Lessons
 
 1. [Kalah Rules and State Representation](01_kalah_rules.md)
 2. [Perfect-Information Games](02_perfect_information_games.md)
