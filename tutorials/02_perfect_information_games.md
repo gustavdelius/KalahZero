@@ -15,7 +15,33 @@ is known exactly, and both players observe the same state.
 
 ## Game Trees
 
-A game tree alternates between states and actions:
+A game tree shows all possible futures from a position. The root is the current
+state. Each edge is a legal action, and each child is the state that results
+from that action. From a Kalah state $s$, the first layer of the tree is:
+
+$$
+s
+\longrightarrow
+\{T(s,a) \mid a \in \mathcal{A}(s)\}.
+$$
+
+If three actions are legal at the root, the tree begins like this:
+
+```text
+s
+├── a=0 --> T(s,0)
+│   ├── reply 0 --> ...
+│   └── reply 1 --> ...
+├── a=2 --> T(s,2)
+│   ├── reply 0 --> ...
+│   └── reply 4 --> ...
+└── a=5 --> T(s,5)
+    ├── reply 1 --> ...
+    └── reply 3 --> ...
+```
+
+Every node is a state, and every edge is a move. A single game is just one path
+through this tree:
 
 $$
 s_0 \xrightarrow{a_0} s_1 \xrightarrow{a_1} s_2
@@ -45,6 +71,12 @@ chooses the move worst for me."
 The formula above defines perfect play, but computing it exactly would require
 searching the full game tree. Instead, the code uses depth-limited minimax:
 
+The number $d$ is the remaining search depth: how many more moves we are willing
+to look ahead before stopping and using a heuristic. If $d=0$, we do not look at
+any children and simply evaluate the current state with $h_p(s)$. If $d=1$, we
+try each legal move once and evaluate the resulting states. If $d=2$, we also
+look at the replies to those moves.
+
 $$
 \hat{V}_{p,d}(s) =
 \begin{cases}
@@ -57,8 +89,8 @@ h_p(s), & d = 0, \\
 \end{cases}
 $$
 
-The new symbol \(h_p(s)\) is a heuristic evaluation function. It answers:
-"if I stop searching here, how good does this position look for player \(p\)?"
+The new symbol $h_p(s)$ is a heuristic evaluation function. It answers:
+"if I stop searching here, how good does this position look for player $p$?"
 
 In `MinimaxAgent`, the heuristic is:
 
@@ -109,13 +141,13 @@ stones still matter, but they can later be captured or swept.
 
 ## How To Read The Recursion
 
-Suppose player \(p\) is the player for whom we are evaluating the root. The
+Suppose player $p$ is the player for whom we are evaluating the root. The
 algorithm carries that player around as `perspective`.
 
 At every node:
 
-- If the game is over, return the true reward \(z_p(s)\).
-- If the depth limit is reached, return the heuristic \(h_p(s)\).
+- If the game is over, return the true reward $z_p(s)$.
+- If the depth limit is reached, return the heuristic $h_p(s)$.
 - If `state.current_player == perspective`, choose the maximum child value.
 - Otherwise, choose the minimum child value.
 
@@ -183,11 +215,9 @@ $$
 
 where $b$ is branching factor and $d$ is depth.
 
-If \(b=6\) and \(d=8\), this is already more than \(2\) million nodes in the
+If $b=6$ and $d=8$, this is already more than $2$ million nodes in the
 worst case. Alpha-beta pruning gives the same minimax answer while skipping
 branches that cannot change the decision.
-
-## What Alpha And Beta Mean
 
 Alpha-beta pruning carries two bounds:
 
@@ -203,8 +233,8 @@ $$
 
 Think of them as promises from ancestors in the search tree:
 
-- \(\alpha\): "Max already has an option worth at least this much."
-- \(\beta\): "Min already has an option that can hold the value to at most this
+- $\alpha$: "Max already has an option worth at least this much."
+- $\beta$: "Min already has an option that can hold the value to at most this
   much."
 
 If at any point
@@ -224,12 +254,12 @@ $$
 \min_a \hat{V}_{p,d-1}(T(s,a)).
 $$
 
-Suppose one child has value \(0.2\). Then the minimizing player can already
-force the value to be at most \(0.2\), so \(\beta = 0.2\).
+Suppose one child has value $0.2$. Then the minimizing player can already
+force the value to be at most $0.2$, so $\beta = 0.2$.
 
 Now suppose an ancestor maximizing node already has another branch worth
-\(\alpha = 0.5\). The maximizing player will never choose a branch where the
-opponent can hold the result to \(0.2\). So if
+$\alpha = 0.5$. The maximizing player will never choose a branch where the
+opponent can hold the result to $0.2$. So if
 
 $$
 \beta \le \alpha,
@@ -238,11 +268,11 @@ $$
 the rest of the minimizing node's children cannot matter.
 
 The maximizing case is symmetric: once max finds a value at least as large as
-the current \(\beta\), min will avoid the branch.
+the current $\beta$, min will avoid the branch.
 
 ## Alpha-Beta In Code
 
-At a maximizing node, the code raises \(\alpha\):
+At a maximizing node, the code raises $\alpha$:
 
 ```python
 value = -math.inf
@@ -254,7 +284,7 @@ for action in state.legal_actions():
 return value
 ```
 
-At a minimizing node, the code lowers \(\beta\):
+At a minimizing node, the code lowers $\beta$:
 
 ```python
 value = math.inf
@@ -271,9 +301,9 @@ change the exact depth-limited minimax result.
 
 ## A Tiny Worked Example
 
-Imagine a root maximizing node with two candidate moves, \(A\) and \(B\).
+Imagine a root maximizing node with two candidate moves, $A$ and $B$.
 
-Move \(A\) has already been searched and gives:
+Move $A$ has already been searched and gives:
 
 $$
 \hat{V}(A) = 0.4.
@@ -285,15 +315,15 @@ $$
 \alpha = 0.4.
 $$
 
-Now search move \(B\), which leads to a minimizing node. The first reply by the
+Now search move $B$, which leads to a minimizing node. The first reply by the
 opponent gives:
 
 $$
 \hat{V}(B_1) = 0.1.
 $$
 
-Because the opponent is minimizing, the value of move \(B\) is now known to be
-at most \(0.1\):
+Because the opponent is minimizing, the value of move $B$ is now known to be
+at most $0.1$:
 
 $$
 \beta = 0.1.
@@ -305,13 +335,13 @@ $$
 \alpha = 0.4 \ge 0.1 = \beta,
 $$
 
-the root player will prefer \(A\) no matter what the remaining replies under
-\(B\) are. The rest of move \(B\)'s subtree can be pruned.
+the root player will prefer $A$ no matter what the remaining replies under
+$B$ are. The rest of move $B$'s subtree can be pruned.
 
 ## Move Ordering
 
 Alpha-beta pruning is strongest when good moves are searched first. If the best
-moves appear early, \(\alpha\) and \(\beta\) tighten quickly, and more branches
+moves appear early, $\alpha$ and $\beta$ tighten quickly, and more branches
 are cut.
 
 This teaching implementation keeps move ordering simple so the algorithm is

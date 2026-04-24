@@ -41,7 +41,7 @@ The target policy is:
 $$
 \pi_t(a) =
 \frac{N(s_t,a)^{1/\tau}}
-\sum_b N(s_t,b)^{1/\tau}},
+{\sum_b N(s_t,b)^{1/\tau}},
 $$
 
 where $\tau$ is the temperature. In the code, temperature is used when
