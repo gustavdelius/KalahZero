@@ -42,7 +42,8 @@ chooses the move worst for me."
 
 ## Extra Turns
 
-Kalah has extra turns, so the player may not alternate after every move. The
+Kalah has extra turns, so the player may not alternate after every move. In this
+project, extra turns happen after own-store landings and after captures. The
 formula above still works because it checks $\operatorname{player}(s)$ at the
 new state instead of assuming alternation.
 
@@ -119,4 +120,3 @@ python scripts/evaluate.py --agent-a minimax --agent-b random --games 10
 
 Then change the minimax depth in `src/kalah_zero/agents.py` or pass a smaller
 depth in a small script. Predict how speed and strength should change.
-

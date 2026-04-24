@@ -88,13 +88,15 @@ $$
 s' = T(s, a).
 $$
 
-For Kalah, $T$ does five things:
+For Kalah, $T$ does six things:
 
 1. Pick up all stones from the selected pit.
 2. Sow them counter-clockwise.
 3. Skip the opponent's store.
-4. Capture when the last stone lands in an empty own pit opposite stones.
-5. Sweep remaining stones if either side becomes empty.
+4. Give the player another move if the last stone lands in their own store or
+   the move makes a capture.
+5. Capture when the last stone lands in an empty own pit opposite stones.
+6. Sweep remaining stones if either side becomes empty.
 
 The public API is small:
 
@@ -111,6 +113,37 @@ def apply(self, action: int) -> GameState:
 The important design point is that all later algorithms see Kalah only through
 this transition function. MCTS, minimax, and self-play do not need special
 knowledge of sowing or capture.
+
+## Extra Moves
+
+This project uses a Kalah variant with two extra-move cases. Player $p$ moves
+again if either:
+
+- the final sown stone lands in player $p$'s own store, or
+- the move captures stones from the opposite pit.
+
+$$
+\operatorname{player}(T(s,a)) =
+\begin{cases}
+p, & \text{if the last stone lands in } \operatorname{store}(p), \\
+p, & \text{if the move captures stones}, \\
+1-p, & \text{otherwise}.
+\end{cases}
+$$
+
+For example, from the standard opening position with four stones in every pit,
+player $0$ can choose local pit $2$. The four stones land in pits $3$, $4$,
+$5$, and then player $0$'s store, so player $0$ gets another move.
+
+The implementation records this in one line:
+
+```python
+next_player = mover if index == own_store or captured_stones else 1 - mover
+```
+
+This rule matters for search. Minimax and MCTS must look at
+`state.current_player` after applying a move; they cannot simply assume that
+turns alternate.
 
 ## Terminal States and Reward
 
@@ -158,4 +191,3 @@ python -m pytest tests/test_game.py
 
 Then inspect `tests/test_game.py` and explain which Kalah rule each test
 protects.
-

@@ -111,6 +111,7 @@ class GameState:
             stones -= 1
 
         own_store = self.store_index(mover)
+        captured_stones = False
         if self._is_own_pit(index, mover) and board[index] == 1:
             opposite = self.opposite_index(index)
             captured = board[opposite]
@@ -118,8 +119,9 @@ class GameState:
                 board[opposite] = 0
                 board[index] = 0
                 board[own_store] += captured + 1
+                captured_stones = True
 
-        next_player = mover if index == own_store else 1 - mover
+        next_player = mover if index == own_store or captured_stones else 1 - mover
         if self._side_empty_on_board(board, PLAYER_0) or self._side_empty_on_board(board, PLAYER_1):
             self._sweep_remaining(board)
 
@@ -184,4 +186,3 @@ class GameState:
     def _validate_player(self, player: int) -> None:
         if player not in (PLAYER_0, PLAYER_1):
             raise ValueError("player must be 0 or 1")
-

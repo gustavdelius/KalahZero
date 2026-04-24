@@ -35,7 +35,7 @@ class GameStateTests(unittest.TestCase):
         self.assertEqual(child.store_for(1), 0)
         self.assertEqual(child.total_stones, state.total_stones)
 
-    def test_capture_from_opposite_pit(self) -> None:
+    def test_capture_from_opposite_pit_gives_another_turn(self) -> None:
         state = GameState(
             board=(0, 0, 1, 0, 0, 1, 0, 0, 0, 5, 0, 0, 1, 0),
             current_player=0,
@@ -47,7 +47,7 @@ class GameStateTests(unittest.TestCase):
         self.assertEqual(child.board[3], 0)
         self.assertEqual(child.board[9], 0)
         self.assertEqual(child.store_for(0), 6)
-        self.assertEqual(child.current_player, 1)
+        self.assertEqual(child.current_player, 0)
 
     def test_endgame_sweeps_remaining_stones(self) -> None:
         state = GameState(
@@ -83,4 +83,3 @@ class GameStateTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

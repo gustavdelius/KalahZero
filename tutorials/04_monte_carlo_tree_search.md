@@ -100,8 +100,8 @@ $$
 V_{1-p}(s) = -V_p(s)
 $$
 
-for win/loss rewards. Kalah extra turns mean the sign flips only when the
-player-to-move changes.
+for win/loss rewards. Kalah extra turns, including capture turns in this
+variant, mean the sign flips only when the player-to-move changes.
 
 ```python
 if node.state.current_player == child_player:
@@ -120,4 +120,3 @@ python scripts/inspect_position.py --simulations 100 --tree-depth 2
 
 Then rerun with `--simulations 10` and `--simulations 500`. Watch how the visit
 distribution becomes less noisy.
-

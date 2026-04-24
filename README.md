@@ -13,9 +13,9 @@ The project is intentionally compact:
   inspection.
 
 Default game: 6 pits per player, 4 stones per pit, skip the opponent store,
-extra move when the last stone lands in your store, capture from the opposite
-pit when the last stone lands in an empty own pit, and sweep remaining stones
-when either side becomes empty.
+extra move when the last stone lands in your store or when you make a capture,
+capture from the opposite pit when the last stone lands in an empty own pit,
+and sweep remaining stones when either side becomes empty.
 
 ## Quick Start
 
