@@ -6,4 +6,6 @@ __pycache__/
 .venv/
 checkpoints/
 self_play_samples.pkl
-
+/.quarto/
+/_site/
+**/*.quarto_ipynb

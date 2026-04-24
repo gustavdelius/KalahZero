@@ -9,32 +9,32 @@ small, trustworthy game engine.
 AlphaZero does not learn from pixels here. It learns from a formal game model.
 For Kalah, that model is a tuple:
 
-\[
+$$
 s = (b, p),
-\]
+$$
 
-where \(b\) is the board vector and \(p \in \{0, 1\}\) is the player to move.
+where $b$ is the board vector and $p \in \{0, 1\}$ is the player to move.
 
 ## Board Coordinates
 
-For the default game, \(6\) pits and \(4\) stones per pit, the board has
-\(2 \cdot 6 + 2 = 14\) entries:
+For the default game, $6$ pits and $4$ stones per pit, the board has
+$2 \cdot 6 + 2 = 14$ entries:
 
-\[
+$$
 b = (b_0, b_1, \ldots, b_{13}).
-\]
+$$
 
 The stores are:
 
-\[
+$$
 \operatorname{store}(0) = 6,
 \qquad
 \operatorname{store}(1) = 13.
-\]
+$$
 
-Player \(0\)'s pits are indices \(0,\ldots,5\). Player \(1\)'s pits are
-indices \(7,\ldots,12\). A move is represented as a local pit number
-\(a \in \{0,\ldots,5\}\) for the player to move.
+Player $0$'s pits are indices $0,\ldots,5$. Player $1$'s pits are
+indices $7,\ldots,12$. A move is represented as a local pit number
+$a \in \{0,\ldots,5\}$ for the player to move.
 
 Here is the corresponding code:
 
@@ -59,10 +59,10 @@ another branch.
 
 The legal action set is:
 
-\[
+$$
 \mathcal{A}(s) =
 \{a \mid a \text{ is one of the current player's pits and } b_a > 0\}.
-\]
+$$
 
 In code, the definition is deliberately plain:
 
@@ -84,11 +84,11 @@ Teaching code should make the mathematical object easy to see.
 
 The transition function is:
 
-\[
+$$
 s' = T(s, a).
-\]
+$$
 
-For Kalah, \(T\) does five things:
+For Kalah, $T$ does five things:
 
 1. Pick up all stones from the selected pit.
 2. Sow them counter-clockwise.
@@ -116,23 +116,23 @@ knowledge of sowing or capture.
 
 The terminal predicate is:
 
-\[
+$$
 \operatorname{terminal}(s) =
 \left[\sum_{i \in P_0} b_i = 0\right]
 \lor
 \left[\sum_{i \in P_1} b_i = 0\right].
-\]
+$$
 
-The final reward for player \(p\) is:
+The final reward for player $p$ is:
 
-\[
+$$
 z_p(s) =
 \begin{cases}
 1, & \operatorname{store}_p(s) > \operatorname{store}_{1-p}(s), \\
 0, & \operatorname{store}_p(s) = \operatorname{store}_{1-p}(s), \\
 -1, & \operatorname{store}_p(s) < \operatorname{store}_{1-p}(s).
 \end{cases}
-\]
+$$
 
 Code:
 

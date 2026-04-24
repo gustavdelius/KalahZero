@@ -1,0 +1,77 @@
+project:
+  type: website
+  output-dir: _site
+
+website:
+  title: "KalahZero"
+  site-url: "https://gustavdelius.github.io/Serata/"
+  repo-url: "https://github.com/gustavdelius/Serata"
+  repo-actions: [source, issue]
+  page-navigation: true
+  navbar:
+    background: "#223843"
+    foreground: "#ffffff"
+    left:
+      - href: index.qmd
+        text: Home
+      - href: tutorials/index.qmd
+        text: Tutorials
+    right:
+      - icon: github
+        href: "https://github.com/gustavdelius/Serata"
+  sidebar:
+    - title: "Tutorials"
+      style: docked
+      background: light
+      contents:
+        - href: tutorials/index.qmd
+          text: Overview
+        - section: "Foundations"
+          contents:
+            - href: tutorials/01_kalah_rules.md
+              text: "1. Kalah Rules"
+            - href: tutorials/02_perfect_information_games.md
+              text: "2. Perfect-Information Games"
+            - href: tutorials/03_baseline_agents.md
+              text: "3. Baseline Agents"
+        - section: "Search"
+          contents:
+            - href: tutorials/04_monte_carlo_tree_search.md
+              text: "4. Monte Carlo Tree Search"
+            - href: tutorials/05_puct.md
+              text: "5. PUCT"
+        - section: "Learning"
+          contents:
+            - href: tutorials/06_neural_policy_value_networks.md
+              text: "6. Policy-Value Networks"
+            - href: tutorials/07_self_play_training.md
+              text: "7. Self-Play"
+            - href: tutorials/08_alphazero_loss.md
+              text: "8. AlphaZero Loss"
+        - section: "Practice"
+          contents:
+            - href: tutorials/09_evaluation.md
+              text: "9. Evaluation"
+            - href: tutorials/10_instrumentation.md
+              text: "10. Instrumentation"
+            - href: tutorials/11_scaling_strength.md
+              text: "11. Scaling Strength"
+            - href: tutorials/12_codebase_walkthrough.md
+              text: "12. Codebase Walkthrough"
+
+format:
+  html:
+    theme:
+      light: [cosmo, styles/site.scss]
+    toc: true
+    toc-depth: 3
+    number-sections: false
+    code-copy: true
+    code-overflow: wrap
+    highlight-style: github
+    html-math-method: mathjax
+    link-external-newwindow: true
+
+execute:
+  freeze: auto
+

@@ -6,6 +6,7 @@ AlphaZero-style agent for Kalah.
 The project is intentionally compact:
 
 - `tutorials/` explains the math and code in order.
+- `_quarto.yml` turns those tutorials into a Quarto website with MathJax.
 - `src/kalah_zero/` contains the implementation.
 - `tests/` protects the game rules and search behavior.
 - `scripts/` gives you command-line entry points for play, training, and
@@ -39,3 +40,15 @@ python scripts/play_cli.py --agent greedy
 
 Read the tutorials in order from `tutorials/01_kalah_rules.md`.
 
+## Tutorial Website
+
+Render the Quarto site locally:
+
+```bash
+quarto render
+quarto preview
+```
+
+The GitHub Actions workflow in `.github/workflows/quarto-pages.yml` renders
+the site and deploys `_site` to GitHub Pages. In the repository settings, set
+Pages to use **GitHub Actions** as its source.

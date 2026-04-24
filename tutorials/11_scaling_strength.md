@@ -8,24 +8,24 @@ core algorithm.
 The first implementation prioritizes clarity. Strength comes from improving the
 quality of the policy target:
 
-\[
+$$
 \pi(a \mid s) =
 \frac{N(s,a)}{\sum_b N(s,b)}.
-\]
+$$
 
 Better visit counts usually mean better targets.
 
 ## More Simulations
 
-If each search uses \(K\) simulations, the approximate compute cost is:
+If each search uses $K$ simulations, the approximate compute cost is:
 
-\[
+$$
 \operatorname{cost}
 \approx
 K \cdot \operatorname{cost}(\text{one simulation}).
-\]
+$$
 
-Increasing \(K\) usually improves move quality but slows self-play. Try:
+Increasing $K$ usually improves move quality but slows self-play. Try:
 
 ```bash
 python scripts/inspect_position.py --simulations 25
@@ -36,11 +36,11 @@ python scripts/inspect_position.py --simulations 400
 
 The replay buffer stores:
 
-\[
+$$
 \mathcal{D} = \{(s_i,\pi_i,z_i)\}_{i=1}^{M}.
-\]
+$$
 
-If \(M\) is too small, the network overfits recent games. If \(M\) is too large,
+If $M$ is too small, the network overfits recent games. If $M$ is too large,
 training may lag behind the current policy. The default is intentionally modest:
 
 ```python
@@ -53,15 +53,15 @@ class TrainConfig:
 
 The current model is a small multilayer perceptron:
 
-\[
+$$
 x \rightarrow h_1 \rightarrow h_2 \rightarrow (p,v).
-\]
+$$
 
 A stronger version could use residual blocks:
 
-\[
+$$
 h_{k+1} = h_k + F_k(h_k).
-\]
+$$
 
 Residual connections make deeper networks easier to train, but they add
 complexity. For learning AlphaZero, the MLP is the right first model.
@@ -71,13 +71,13 @@ complexity. For learning AlphaZero, the MLP is the right first model.
 The biggest engineering upgrade is batching. Instead of evaluating one leaf at a
 time:
 
-\[
+$$
 f_\theta(s_1), f_\theta(s_2), \ldots, f_\theta(s_B),
-\]
+$$
 
 evaluate a batch:
 
-\[
+$$
 f_\theta
 \left(
 \begin{bmatrix}
@@ -87,7 +87,7 @@ x(s_2) \\
 x(s_B)
 \end{bmatrix}
 \right).
-\]
+$$
 
 This makes better use of vectorized CPU operations and GPUs.
 

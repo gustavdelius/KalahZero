@@ -7,78 +7,78 @@ from two targets at once: the final winner and the search policy.
 
 For one sample:
 
-\[
+$$
 (s, \pi, z),
-\]
+$$
 
 the network predicts:
 
-\[
+$$
 f_\theta(s) = (p_\theta, v_\theta).
-\]
+$$
 
 The AlphaZero-style loss is:
 
-\[
+$$
 \mathcal{L}(\theta)
 =
 (z - v_\theta(s))^2
 - \sum_a \pi(a \mid s)\log p_\theta(a \mid s)
 + \lambda \lVert \theta \rVert_2^2.
-\]
+$$
 
 ## Value Loss
 
 The value term is mean squared error:
 
-\[
+$$
 \mathcal{L}_{\text{value}}
 =
 (z - v_\theta(s))^2.
-\]
+$$
 
-If \(z=1\) and \(v_\theta(s)=0.2\), the loss contribution is:
+If $z=1$ and $v_\theta(s)=0.2$, the loss contribution is:
 
-\[
+$$
 (1 - 0.2)^2 = 0.64.
-\]
+$$
 
 This teaches the network to predict who eventually wins.
 
 ## Policy Loss
 
-The policy target \(\pi\) comes from MCTS visit counts, not from a human. The
+The policy target $\pi$ comes from MCTS visit counts, not from a human. The
 cross-entropy term is:
 
-\[
+$$
 \mathcal{L}_{\text{policy}}
 =
 - \sum_a \pi(a \mid s)\log p_\theta(a \mid s).
-\]
+$$
 
-If search assigns most visits to action \(2\), the network is trained to make
-action \(2\) more likely next time. Search is therefore a policy improvement
+If search assigns most visits to action $2$, the network is trained to make
+action $2$ more likely next time. Search is therefore a policy improvement
 operator:
 
-\[
+$$
 p_\theta(\cdot \mid s)
 \xrightarrow{\text{MCTS}}
 \pi(\cdot \mid s)
 \xrightarrow{\text{training}}
 p_{\theta'}(\cdot \mid s).
-\]
+$$
 
 ## Regularization
 
 The regularizer is:
 
-\[
+$$
 \mathcal{L}_{\text{reg}}
 =
 \lambda \lVert \theta \rVert_2^2
 =
 \lambda \sum_i \theta_i^2.
-\]
+$$
 
 It discourages unnecessarily large weights.
 
@@ -99,11 +99,11 @@ loss = policy_loss + value_loss + l2_loss
 
 The network returns logits rather than probabilities. `log_softmax` computes:
 
-\[
+$$
 \log p_\theta(a \mid s)
 =
 \ell_a - \log\sum_b e^{\ell_b}.
-\]
+$$
 
 This is more numerically stable than applying `softmax` and then `log`.
 

@@ -16,9 +16,9 @@ class Agent(Protocol):
 
 Mathematically, an agent is a policy:
 
-\[
+$$
 \pi(a \mid s),
-\]
+$$
 
 which assigns probabilities to actions. A deterministic agent is the special
 case where all probability mass goes to one action.
@@ -27,13 +27,13 @@ case where all probability mass goes to one action.
 
 The random policy is:
 
-\[
+$$
 \pi_{\text{rand}}(a \mid s) =
 \begin{cases}
 \frac{1}{|\mathcal{A}(s)|}, & a \in \mathcal{A}(s), \\
 0, & \text{otherwise}.
 \end{cases}
-\]
+$$
 
 Code:
 
@@ -54,14 +54,14 @@ many legal transitions.
 
 The greedy agent chooses the move with the best immediate store margin:
 
-\[
+$$
 a^\* =
 \arg\max_{a \in \mathcal{A}(s)}
 \left[
 \operatorname{store}_p(T(s,a)) -
 \operatorname{store}_{1-p}(T(s,a))
 \right].
-\]
+$$
 
 Code:
 
@@ -79,9 +79,9 @@ traps.
 
 ## Minimax Agent
 
-Minimax approximates \(V_p^\*(s)\) with a depth limit \(d\):
+Minimax approximates $V_p^\*(s)$ with a depth limit $d$:
 
-\[
+$$
 \hat{V}_{p,d}(s) =
 \begin{cases}
 z_p(s), & \operatorname{terminal}(s), \\
@@ -89,26 +89,26 @@ h_p(s), & d = 0, \\
 \max_a \hat{V}_{p,d-1}(T(s,a)), & \operatorname{player}(s)=p, \\
 \min_a \hat{V}_{p,d-1}(T(s,a)), & \operatorname{player}(s)\ne p.
 \end{cases}
-\]
+$$
 
-The heuristic \(h_p\) in this repo is:
+The heuristic $h_p$ in this repo is:
 
-\[
+$$
 h_p(s) =
 \frac{
 \Delta_{\text{store}}(s) + 0.25\,\Delta_{\text{pit}}(s)
 }{
 \max(1,\operatorname{stones}(s))
 }.
-\]
+$$
 
 ## Comparing Agents
 
-For \(n\) games, the observed win rate is:
+For $n$ games, the observed win rate is:
 
-\[
+$$
 \hat{p} = \frac{w}{n}.
-\]
+$$
 
 The arena alternates starting positions so first-player advantage is less
 misleading:

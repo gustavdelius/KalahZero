@@ -7,7 +7,7 @@ you can read all of it, but it helps to know the order.
 
 The whole AlphaZero loop is:
 
-\[
+$$
 \text{GameState}
 \rightarrow
 \text{MCTS}
@@ -21,7 +21,7 @@ The whole AlphaZero loop is:
 f_{\theta'}
 \rightarrow
 \text{MCTS again}.
-\]
+$$
 
 ## One Move Through The System
 
@@ -57,11 +57,11 @@ trajectory.append((state, tuple(result.policy), state.current_player))
 
 Mathematically, this creates:
 
-\[
+$$
 (s_t, \pi_t, p_t),
-\]
+$$
 
-where \(p_t\) is the player who will later receive the final outcome target.
+where $p_t$ is the player who will later receive the final outcome target.
 
 ## Reading Order
 
@@ -78,7 +78,7 @@ Read the files in this order:
 
 This order follows the dependency graph:
 
-\[
+$$
 \text{rules}
 \rightarrow
 \text{baselines}
@@ -90,7 +90,7 @@ This order follows the dependency graph:
 \text{training}
 \rightarrow
 \text{evaluation}.
-\]
+$$
 
 ## The Core Interfaces
 
@@ -111,15 +111,15 @@ If you understand those six calls, you understand the spine of the project.
 
 AlphaZero alternates between two operations:
 
-\[
+$$
 \text{policy improvement:}
 \qquad
 p_\theta(\cdot \mid s)
 \mapsto
 \pi(\cdot \mid s),
-\]
+$$
 
-\[
+$$
 \text{policy evaluation and imitation:}
 \qquad
 \theta
@@ -127,7 +127,7 @@ p_\theta(\cdot \mid s)
 \theta'
 \text{ by minimizing }
 \mathcal{L}(\theta).
-\]
+$$
 
 The beautiful part is that both operations use the same game engine.
 

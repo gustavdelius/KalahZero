@@ -8,19 +8,19 @@ training on the search results.
 
 One self-play game produces samples:
 
-\[
+$$
 \mathcal{D}_{\text{game}} =
 \{(s_t, \pi_t, z_t)\}_{t=0}^{T-1}.
-\]
+$$
 
 ## At Each Move
 
-At time \(t\):
+At time $t$:
 
-1. Run MCTS from \(s_t\).
-2. Convert visit counts into a policy target \(\pi_t\).
-3. Pick an action \(a_t\).
-4. Apply the action to get \(s_{t+1}=T(s_t,a_t)\).
+1. Run MCTS from $s_t$.
+2. Convert visit counts into a policy target $\pi_t$.
+3. Pick an action $a_t$.
+4. Apply the action to get $s_{t+1}=T(s_t,a_t)$.
 
 The code is direct:
 
@@ -38,32 +38,32 @@ while not state.is_terminal():
 
 The target policy is:
 
-\[
+$$
 \pi_t(a) =
 \frac{N(s_t,a)^{1/\tau}}
 \sum_b N(s_t,b)^{1/\tau}},
-\]
+$$
 
-where \(\tau\) is the temperature. In the code, temperature is used when
+where $\tau$ is the temperature. In the code, temperature is used when
 selecting the played action. The stored policy remains the normalized visit
 distribution returned by search.
 
-When \(\tau = 1\), actions are sampled roughly according to visits. As
-\(\tau \to 0\), selection becomes greedy:
+When $\tau = 1$, actions are sampled roughly according to visits. As
+$\tau \to 0$, selection becomes greedy:
 
-\[
+$$
 a_t = \arg\max_a N(s_t,a).
-\]
+$$
 
 ## Final Outcome Becomes Value Target
 
-After the terminal state \(s_T\), each earlier position receives:
+After the terminal state $s_T$, each earlier position receives:
 
-\[
+$$
 z_t = z_{p_t}(s_T),
-\]
+$$
 
-where \(p_t\) is the player to move at \(s_t\).
+where $p_t$ is the player to move at $s_t$.
 
 Code:
 
@@ -81,10 +81,10 @@ This line is easy to miss. The value target is not "did player 0 win?" It is
 
 The replay buffer approximates a dataset:
 
-\[
+$$
 \mathcal{D} =
 \bigcup_i \mathcal{D}_{\text{game }i}.
-\]
+$$
 
 It has finite capacity, so old samples are dropped:
 

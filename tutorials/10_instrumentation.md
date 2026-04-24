@@ -7,9 +7,9 @@ produce legal-looking games with bad learning signals, so observability matters.
 
 The most useful quantities are:
 
-\[
+$$
 N(s,a), \qquad Q(s,a), \qquad P(s,a), \qquad \pi(a \mid s).
-\]
+$$
 
 ## Tree Dumps
 
@@ -30,25 +30,25 @@ python scripts/inspect_position.py --simulations 200 --tree-depth 2
 
 Read the output as:
 
-\[
+$$
 N = \text{how much search trusted this branch},
-\]
+$$
 
-\[
+$$
 Q = \text{how good the branch looked after backup},
-\]
+$$
 
-\[
+$$
 P = \text{how much the evaluator liked it before search}.
-\]
+$$
 
 ## Conservation Checks
 
 Before terminal sweeping, Kalah preserves the number of stones:
 
-\[
+$$
 \sum_i b_i = \text{constant}.
-\]
+$$
 
 Tests protect this kind of invariant:
 
@@ -64,11 +64,11 @@ wrong.
 
 A common bug is training or searching over illegal actions. For every state:
 
-\[
+$$
 \pi(a \mid s) = 0
 \qquad
 \text{for all } a \notin \mathcal{A}(s).
-\]
+$$
 
 The tests check that MCTS respects this:
 
@@ -82,9 +82,9 @@ self.assertGreater(result.policy[2] + result.policy[5], 0.0)
 
 For terminal states, the correct value is known:
 
-\[
+$$
 v^\*(s) = z_{\operatorname{player}(s)}(s).
-\]
+$$
 
 During debugging, inspect whether the value head gives sensible signs for
 obviously winning or losing positions. Early random networks will not, but

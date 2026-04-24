@@ -5,13 +5,13 @@
 This lesson separates "the loss went down" from "the agent got stronger."
 AlphaZero-style systems must be evaluated by playing games.
 
-Suppose agent \(A\) plays \(n\) games and gets \(w\) wins, \(d\) draws, and
-\(\ell\) losses. Its score rate is:
+Suppose agent $A$ plays $n$ games and gets $w$ wins, $d$ draws, and
+$\ell$ losses. Its score rate is:
 
-\[
+$$
 \hat{s}_A =
 \frac{w + \frac{1}{2}d}{n}.
-\]
+$$
 
 The current `ArenaResult` reports wins, losses, and draws directly:
 
@@ -44,39 +44,39 @@ else:
 
 Mathematically, this estimates:
 
-\[
+$$
 \frac{1}{2}
 \Pr(A \text{ beats } B \mid A \text{ starts})
 +
 \frac{1}{2}
 \Pr(A \text{ beats } B \mid B \text{ starts}).
-\]
+$$
 
 ## Confidence
 
 A win rate is an estimate. If we model each game as a Bernoulli trial with win
-probability \(p\), then the standard error of \(\hat{p}\) is approximately:
+probability $p$, then the standard error of $\hat{p}$ is approximately:
 
-\[
+$$
 \operatorname{SE}(\hat{p})
 =
 \sqrt{\frac{\hat{p}(1-\hat{p})}{n}}.
-\]
+$$
 
-With \(n=10\), this is large. With \(n=200\), it is much smaller. This is why
+With $n=10$, this is large. With $n=200$, it is much smaller. This is why
 tiny evaluations are good for smoke tests but poor for scientific claims.
 
 ## Elo Intuition
 
 An Elo model predicts:
 
-\[
+$$
 \Pr(A \text{ beats } B)
 =
 \frac{1}{1 + 10^{(R_B - R_A)/400}},
-\]
+$$
 
-where \(R_A\) and \(R_B\) are ratings. This repo does not need full Elo yet,
+where $R_A$ and $R_B$ are ratings. This repo does not need full Elo yet,
 but the formula explains why repeated arena matches can be turned into a rating
 system later.
 

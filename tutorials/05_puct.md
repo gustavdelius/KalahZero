@@ -7,35 +7,35 @@ with a neural network that supplies policy priors and value estimates.
 
 The network represents:
 
-\[
+$$
 f_\theta(s) = (P_\theta(s), v_\theta(s)).
-\]
+$$
 
-Here \(P_\theta(s)\) is a probability distribution over moves and
-\(v_\theta(s) \in [-1,1]\) is the predicted outcome for the player to move.
+Here $P_\theta(s)$ is a probability distribution over moves and
+$v_\theta(s) \in [-1,1]$ is the predicted outcome for the player to move.
 
 ## From UCT To PUCT
 
 UCT explores every action from scratch:
 
-\[
+$$
 Q(s,a) + c
 \sqrt{
 \frac{\log(N(s)+2)}{1 + N(s,a)}
 }.
-\]
+$$
 
-AlphaZero uses a prior \(P(s,a)\) from the network:
+AlphaZero uses a prior $P(s,a)$ from the network:
 
-\[
+$$
 \operatorname{PUCT}(s,a) =
 Q(s,a)
 + c_{\text{puct}}
 P(s,a)
 \frac{\sqrt{N(s)+1}}{1 + N(s,a)}.
-\]
+$$
 
-If the network thinks a move is plausible, \(P(s,a)\) is larger, so that move
+If the network thinks a move is plausible, $P(s,a)$ is larger, so that move
 gets explored earlier. Search can still override the network if the value
 statistics become poor.
 
@@ -56,14 +56,14 @@ return q + exploration
 The network outputs one logit per pit, even when a pit is empty. Search must
 mask illegal actions:
 
-\[
+$$
 \tilde{P}(s,a) =
 \begin{cases}
 \frac{\max(0,P(s,a))}{\sum_{b \in \mathcal{A}(s)} \max(0,P(s,b))},
 & a \in \mathcal{A}(s), \\
 0, & a \notin \mathcal{A}(s).
 \end{cases}
-\]
+$$
 
 The implementation falls back to a uniform distribution if all legal priors are
 zero:
@@ -84,12 +84,12 @@ bad; the search should remain well-defined.
 
 During self-play, AlphaZero deliberately perturbs the root prior:
 
-\[
+$$
 P'(s,a) =
 (1-\varepsilon)P(s,a) + \varepsilon\eta_a,
 \qquad
 \eta \sim \operatorname{Dirichlet}(\alpha).
-\]
+$$
 
 This encourages opening diversity. Without it, self-play can collapse into a
 small set of familiar games.
@@ -108,15 +108,15 @@ for action, sample in zip(actions, noise):
 
 ## Search Policy
 
-After \(K\) simulations, AlphaZero does not train on the single chosen action.
+After $K$ simulations, AlphaZero does not train on the single chosen action.
 It trains on visit counts:
 
-\[
+$$
 \pi(a \mid s) =
 \frac{N(s,a)}{\sum_{b \in \mathcal{A}(s)} N(s,b)}.
-\]
+$$
 
-This \(\pi\) is a stronger target than the raw network prior because it includes
+This $\pi$ is a stronger target than the raw network prior because it includes
 lookahead.
 
 ```python

@@ -7,11 +7,11 @@ a tensor, and why AlphaZero uses two heads.
 
 The network approximates:
 
-\[
+$$
 f_\theta(s) = (p_\theta(\cdot \mid s), v_\theta(s)).
-\]
+$$
 
-The policy \(p_\theta\) suggests promising actions. The value \(v_\theta\)
+The policy $p_\theta$ suggests promising actions. The value $v_\theta$
 estimates the final result for the current player.
 
 ## Canonical Encoding
@@ -19,9 +19,9 @@ estimates the final result for the current player.
 The same physical board can be viewed from either player. To avoid training two
 separate networks, we encode from the current player's perspective.
 
-For \(m\) pits per side:
+For $m$ pits per side:
 
-\[
+$$
 x(s) =
 \left[
 \frac{o_0}{S},\ldots,\frac{o_{m-1}}{S},
@@ -30,15 +30,15 @@ x(s) =
 \frac{R}{S},
 1
 \right],
-\]
+$$
 
 where:
 
-- \(o_i\) are the current player's pit stones.
-- \(r_i\) are the opponent's pit stones.
-- \(O\) is the current player's store.
-- \(R\) is the opponent's store.
-- \(S\) is the total number of stones.
+- $o_i$ are the current player's pit stones.
+- $r_i$ are the opponent's pit stones.
+- $O$ is the current player's store.
+- $R$ is the opponent's store.
+- $S$ is the total number of stones.
 
 Code:
 
@@ -53,33 +53,33 @@ def encode_features(state: GameState) -> list[float]:
     return own + other + stores + [1.0]
 ```
 
-The final \(1\) is a bias-like feature. Neural layers already have biases, but
+The final $1$ is a bias-like feature. Neural layers already have biases, but
 including it makes the input vector explicit for learning and inspection.
 
 ## Two-Headed Network
 
 The trunk computes shared features:
 
-\[
+$$
 h = g_\theta(x).
-\]
+$$
 
 The policy head produces logits:
 
-\[
+$$
 \ell = W_p h + b_p,
 \qquad
 p_\theta(a \mid s) =
 \frac{e^{\ell_a}}{\sum_b e^{\ell_b}}.
-\]
+$$
 
 The value head produces:
 
-\[
+$$
 v_\theta(s) = \tanh(W_v h + b_v).
-\]
+$$
 
-The `tanh` keeps values in \([-1,1]\), matching the reward scale.
+The `tanh` keeps values in $[-1,1]$, matching the reward scale.
 
 Code:
 
@@ -114,14 +114,14 @@ probs = torch.softmax(logits + mask, dim=0)
 
 Mathematically:
 
-\[
+$$
 p_\theta^{\text{legal}}(a \mid s) =
 \begin{cases}
 \frac{e^{\ell_a}}{\sum_{b \in \mathcal{A}(s)} e^{\ell_b}},
 & a \in \mathcal{A}(s), \\
 0, & a \notin \mathcal{A}(s).
 \end{cases}
-\]
+$$
 
 ## Practice
 

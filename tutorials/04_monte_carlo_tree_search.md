@@ -10,19 +10,19 @@ more effort on moves that look promising.
 
 ## Node Statistics
 
-For each edge \((s,a)\), MCTS stores:
+For each edge $(s,a)$, MCTS stores:
 
-\[
+$$
 N(s,a) = \text{number of visits},
-\]
+$$
 
-\[
+$$
 W(s,a) = \text{sum of backed-up values},
-\]
+$$
 
-\[
+$$
 Q(s,a) = \frac{W(s,a)}{N(s,a)}.
-\]
+$$
 
 In code, each child node stores these quantities:
 
@@ -45,17 +45,17 @@ class SearchNode:
 
 Classic UCT chooses the child with the largest score:
 
-\[
+$$
 \operatorname{UCT}(s,a) =
 Q(s,a)
 + c
 \sqrt{
 \frac{\log(N(s)+2)}{1 + N(s,a)}
 }.
-\]
+$$
 
-The exploitation term \(Q(s,a)\) prefers moves that have worked. The
-exploration term is large when \(N(s,a)\) is small.
+The exploitation term $Q(s,a)$ prefers moves that have worked. The
+exploration term is large when $N(s,a)$ is small.
 
 The implementation can switch between UCT and PUCT:
 
@@ -73,10 +73,10 @@ return q + exploration
 
 One simulation consists of:
 
-\[
+$$
 \text{selection} \rightarrow \text{expansion} \rightarrow
 \text{evaluation} \rightarrow \text{backup}.
-\]
+$$
 
 The code mirrors that sequence:
 
@@ -96,9 +96,9 @@ for _ in range(self.simulations):
 A leaf value is always from the leaf state's current player's perspective. When
 the path crosses to the other player, the sign must flip:
 
-\[
+$$
 V_{1-p}(s) = -V_p(s)
-\]
+$$
 
 for win/loss rewards. Kalah extra turns mean the sign flips only when the
 player-to-move changes.

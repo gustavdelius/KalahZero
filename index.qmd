@@ -1,0 +1,68 @@
+---
+title: "KalahZero"
+subtitle: "Learn AlphaZero by building it for Kalah"
+---
+
+KalahZero is a teaching project for understanding AlphaZero from first
+principles. The project pairs derivation-first tutorials with a compact Python
+implementation of Kalah, baseline agents, Monte Carlo Tree Search, a PyTorch
+policy-value network, self-play training, and evaluation tools.
+
+The core loop is:
+
+$$
+\text{rules}
+\rightarrow
+\text{search}
+\rightarrow
+\text{training targets}
+\rightarrow
+\text{neural network}
+\rightarrow
+\text{stronger search}.
+$$
+
+## Start Here
+
+Read the lessons in order:
+
+::: {.callout-tip title="First lesson"}
+Start with [Kalah Rules and State Representation](tutorials/01_kalah_rules.md).
+The game engine is the foundation for every search and learning algorithm that
+comes later.
+:::
+
+## What You Will Build
+
+- An immutable Kalah game engine.
+- Random, greedy, and minimax agents.
+- UCT and AlphaZero-style PUCT search.
+- A PyTorch policy-value network.
+- A self-play training loop with replay buffer.
+- Evaluation and inspection scripts.
+
+## Local Commands
+
+```bash
+source .venv/bin/activate
+python -m pytest
+python scripts/inspect_position.py --simulations 100 --tree-depth 2
+python scripts/train.py --games 4 --simulations 25 --epochs 2
+```
+
+## Why This Site Exists
+
+GitHub's Markdown renderer does not display all LaTeX math consistently in
+plain `.md` files. Quarto renders the tutorials as a website with MathJax, so
+equations such as
+
+$$
+\mathcal{L}(\theta)
+=
+(z - v_\theta(s))^2
+- \sum_a \pi(a \mid s)\log p_\theta(a \mid s)
++ \lambda \lVert \theta \rVert_2^2
+$$
+
+display properly in the browser.
+
