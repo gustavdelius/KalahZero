@@ -32,6 +32,13 @@ The game engine is the foundation for every search and learning algorithm that
 comes later.
 :::
 
+Play the browser version:
+
+::: {.callout-note title="Graphical board"}
+Open [the Kalah web app](web/index.html) to play against the browser-side
+baseline agents.
+:::
+
 ## What You Will Build
 
 - An immutable Kalah game engine.
@@ -65,4 +72,3 @@ $$
 $$
 
 display properly in the browser.
-

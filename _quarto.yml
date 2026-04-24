@@ -1,6 +1,8 @@
 project:
   type: website
   output-dir: _site
+  resources:
+    - "web/**"
 
 website:
   title: "KalahZero"
@@ -16,6 +18,8 @@ website:
         text: Home
       - href: tutorials/index.qmd
         text: Tutorials
+      - href: web/index.html
+        text: Play
     right:
       - icon: github
         href: "https://github.com/gustavdelius/Serata"
@@ -74,4 +78,3 @@ format:
 
 execute:
   freeze: auto
-

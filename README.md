@@ -38,6 +38,14 @@ Play against a baseline:
 python scripts/play_cli.py --agent greedy
 ```
 
+Open the graphical browser board:
+
+```bash
+python -m http.server 8000
+```
+
+Then visit `http://localhost:8000/web/`.
+
 Read the tutorials in order from `tutorials/01_kalah_rules.md`.
 
 ## Tutorial Website
