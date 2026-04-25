@@ -49,8 +49,9 @@ class NeuralEvaluator:
         torch = _torch()
         if not states:
             return []
-        self.model.eval()
-        with torch.no_grad():
+        if self.model.training:
+            self.model.eval()
+        with torch.inference_mode():
             x = torch.stack([encode_state(state) for state in states]).to(self.device)
             logits, values = self.model(x)
             logits = logits.detach().cpu()

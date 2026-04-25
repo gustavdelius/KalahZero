@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Iterable
+from typing import Sequence
 
 
 PLAYER_0 = 0
@@ -73,19 +73,22 @@ class GameState:
         return index - (self.pits + 1)
 
     def pits_for(self, player: int) -> tuple[int, ...]:
-        return tuple(self.board[i] for i in self.pit_indices(player))
+        self._validate_player(player)
+        if player == PLAYER_0:
+            return self.board[: self.pits]
+        return self.board[self.pits + 1 : 2 * self.pits + 1]
 
     def store_for(self, player: int) -> int:
-        return self.board[self.store_index(player)]
+        self._validate_player(player)
+        return self.board[self.store_0 if player == PLAYER_0 else self.store_1]
 
     def legal_actions(self) -> list[int]:
         if self.is_terminal():
             return []
-        return [
-            self.action_for_index(self.current_player, index)
-            for index in self.pit_indices(self.current_player)
-            if self.board[index] > 0
-        ]
+        if self.current_player == PLAYER_0:
+            return [index for index in range(self.pits) if self.board[index] > 0]
+        start = self.pits + 1
+        return [index - start for index in range(start, start + self.pits) if self.board[index] > 0]
 
     def is_terminal(self) -> bool:
         return self._side_empty(PLAYER_0) or self._side_empty(PLAYER_1)
@@ -93,27 +96,31 @@ class GameState:
     def apply(self, action: int) -> GameState:
         if self.is_terminal():
             raise ValueError("cannot apply an action to a terminal state")
-        if action not in self.legal_actions():
+
+        mover = self.current_player
+        if not 0 <= action < self.pits:
+            raise ValueError(f"illegal action {action}")
+        source = action if mover == PLAYER_0 else self.pits + 1 + action
+        if self.board[source] <= 0:
             raise ValueError(f"illegal action {action}")
 
         board = list(self.board)
-        mover = self.current_player
-        source = self.pit_index(mover, action)
         stones = board[source]
         board[source] = 0
 
+        own_store = self.store_0 if mover == PLAYER_0 else self.store_1
+        opponent_store = self.store_1 if mover == PLAYER_0 else self.store_0
         index = source
         while stones:
             index = (index + 1) % len(board)
-            if index == self.store_index(1 - mover):
+            if index == opponent_store:
                 continue
             board[index] += 1
             stones -= 1
 
-        own_store = self.store_index(mover)
         captured_stones = False
         if self._is_own_pit(index, mover) and board[index] == 1:
-            opposite = self.opposite_index(index)
+            opposite = 2 * self.pits - index
             captured = board[opposite]
             if captured > 0:
                 board[opposite] = 0
@@ -166,22 +173,34 @@ class GameState:
     def _side_empty(self, player: int) -> bool:
         return self._side_empty_on_board(self.board, player)
 
-    def _side_empty_on_board(self, board: Iterable[int], player: int) -> bool:
-        board_tuple = tuple(board)
-        return all(board_tuple[i] == 0 for i in self.pit_indices(player))
+    def _side_empty_on_board(self, board: Sequence[int], player: int) -> bool:
+        if player == PLAYER_0:
+            for index in range(self.pits):
+                if board[index] != 0:
+                    return False
+            return True
+        start = self.pits + 1
+        for index in range(start, start + self.pits):
+            if board[index] != 0:
+                return False
+        return True
 
     def _sweep_remaining(self, board: list[int]) -> None:
-        for player in (PLAYER_0, PLAYER_1):
-            store = self.store_index(player)
-            for index in self.pit_indices(player):
-                board[store] += board[index]
-                board[index] = 0
+        for index in range(self.pits):
+            board[self.store_0] += board[index]
+            board[index] = 0
+        start = self.pits + 1
+        for index in range(start, start + self.pits):
+            board[self.store_1] += board[index]
+            board[index] = 0
 
     def _is_pit(self, index: int) -> bool:
         return 0 <= index < len(self.board) and index not in (self.store_0, self.store_1)
 
     def _is_own_pit(self, index: int, player: int) -> bool:
-        return index in self.pit_indices(player)
+        if player == PLAYER_0:
+            return 0 <= index < self.pits
+        return self.pits < index < self.store_1
 
     def _validate_player(self, player: int) -> None:
         if player not in (PLAYER_0, PLAYER_1):
