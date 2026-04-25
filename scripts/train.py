@@ -49,6 +49,19 @@ def build_parser() -> argparse.ArgumentParser:
         help="Number of MCTS leaf positions to evaluate at once when using --batched-mcts.",
     )
     parser.add_argument(
+        "--fast-game",
+        dest="use_fast_game",
+        action="store_true",
+        default=None,
+        help="Use the optional C++ game engine during self-play.",
+    )
+    parser.add_argument(
+        "--no-fast-game",
+        dest="use_fast_game",
+        action="store_false",
+        help="Disable the optional C++ game engine when resuming.",
+    )
+    parser.add_argument(
         "--opening-plies",
         type=int,
         help="Start each self-play game after this many random legal opening moves.",
@@ -106,6 +119,11 @@ def config_from_args(args: argparse.Namespace, saved_config: TrainConfig | None 
         opening_plies=opening_plies,
         opening_plies_min=opening_plies_min,
         opening_plies_max=opening_plies_max,
+        use_fast_game=(
+            args.use_fast_game
+            if args.use_fast_game is not None
+            else base.use_fast_game
+        ),
     )
 
 
@@ -202,6 +220,7 @@ def main() -> None:
             f"target_games={config.games_per_iteration}, buffer={len(buffer)}, "
             f"replay_capacity={buffer.capacity}, "
             f"batched_mcts={config.use_batched_mcts}, "
+            f"fast_game={config.use_fast_game}, "
             f"opening_plies={config.opening_plies}, "
             f"opening_plies_min={config.opening_plies_min}, "
             f"opening_plies_max={config.opening_plies_max}"

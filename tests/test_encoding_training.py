@@ -150,6 +150,11 @@ class OptionalTorchTests(unittest.TestCase):
         self.assertEqual(updated_config.opening_plies_min, 0)
         self.assertEqual(updated_config.opening_plies_max, 8)
 
+        fast_args = parser.parse_args(["--fast-game"])
+        fast_config = config_from_args(fast_args, loaded_config)
+
+        self.assertTrue(fast_config.use_fast_game)
+
 
 if __name__ == "__main__":
     unittest.main()

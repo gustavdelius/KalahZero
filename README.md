@@ -49,6 +49,15 @@ evaluation:
 python scripts/train.py --games 300 --simulations 150 --epochs 1 --batched-mcts --eval-batch-size 32
 ```
 
+For higher simulation counts, build the optional C++ game engine and use it
+together with batched MCTS:
+
+```bash
+python setup.py build_ext --inplace
+python scripts/evaluate.py --checkpoint-a checkpoints/overnight.pt --agent-b minimax \
+  --simulations 400 --batched-mcts --eval-batch-size 8 --fast-game
+```
+
 The same opt-in works for checkpoint evaluation:
 
 ```bash

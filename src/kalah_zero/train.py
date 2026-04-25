@@ -28,6 +28,7 @@ class TrainConfig:
     opening_plies: int = 0
     opening_plies_min: int | None = None
     opening_plies_max: int | None = None
+    use_fast_game: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -75,6 +76,11 @@ def self_play_game(
         )
     else:
         mcts = mcts_factory()
+    state_cls = GameState
+    if config.use_fast_game:
+        from kalah_zero.fast_game import FastGameState
+
+        state_cls = FastGameState
     state = random_opening(
         choose_opening_plies(
             rng,
@@ -85,6 +91,7 @@ def self_play_game(
         rng,
         pits=config.pits,
         stones=config.stones,
+        state_cls=state_cls,
     )
     trajectory: list[tuple[GameState, tuple[float, ...], int]] = []
     move_index = 0

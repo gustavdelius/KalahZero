@@ -81,5 +81,49 @@ class GameStateTests(unittest.TestCase):
         self.assertEqual(state.reward_for_player(1), -1.0)
 
 
+class FastGameStateTests(unittest.TestCase):
+    def test_fast_game_matches_python_for_known_rules(self) -> None:
+        try:
+            from kalah_zero.fast_game import FastGameState
+        except ImportError:
+            self.skipTest("C++ fast game extension is not built")
+
+        positions = [
+            GameState.new_game(),
+            GameState(board=(0, 0, 1, 0, 0, 1, 0, 0, 0, 5, 0, 0, 1, 0), current_player=0),
+            GameState(board=(0, 0, 0, 0, 0, 1, 10, 1, 2, 3, 4, 5, 6, 7), current_player=0),
+        ]
+        for state in positions:
+            fast = FastGameState(state.board, state.current_player, state.pits)
+            self.assertEqual(fast.legal_actions(), state.legal_actions())
+            for action in state.legal_actions():
+                expected = state.apply(action)
+                actual = fast.apply(action)
+                self.assertEqual(actual.board, expected.board)
+                self.assertEqual(actual.current_player, expected.current_player)
+
+    def test_fast_game_matches_python_for_random_play(self) -> None:
+        try:
+            from kalah_zero.fast_game import FastGameState
+        except ImportError:
+            self.skipTest("C++ fast game extension is not built")
+
+        import random
+
+        rng = random.Random(0)
+        python_state = GameState.new_game()
+        fast_state = FastGameState.new_game()
+        for _ in range(50):
+            self.assertEqual(fast_state.board, python_state.board)
+            self.assertEqual(fast_state.current_player, python_state.current_player)
+            legal = python_state.legal_actions()
+            self.assertEqual(fast_state.legal_actions(), legal)
+            if not legal:
+                break
+            action = rng.choice(legal)
+            python_state = python_state.apply(action)
+            fast_state = fast_state.apply(action)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -8,6 +8,7 @@ import sys
 import _path  # noqa: F401
 from kalah_zero.agents import GreedyAgent, MCTSAgent, MinimaxAgent, NoisyAgent, RandomAgent
 from kalah_zero.evaluate import arena
+from kalah_zero.game import GameState
 from kalah_zero.mcts import MCTS, UniformEvaluator
 
 
@@ -69,6 +70,7 @@ def main() -> None:
     parser.add_argument("--simulations", type=int, default=100)
     parser.add_argument("--batched-mcts", action="store_true", help="Batch MCTS leaf evaluations.")
     parser.add_argument("--eval-batch-size", type=int, default=32)
+    parser.add_argument("--fast-game", action="store_true", help="Use the optional C++ game engine.")
     parser.add_argument("--games", type=int, default=20)
     parser.add_argument(
         "--opening-plies",
@@ -94,6 +96,12 @@ def main() -> None:
     )
     parser.add_argument("--seed", type=int, default=0)
     args = parser.parse_args()
+
+    state_cls = GameState
+    if args.fast_game:
+        from kalah_zero.fast_game import FastGameState
+
+        state_cls = FastGameState
 
     def show_progress(completed: int, partial_result) -> None:
         print(
@@ -129,6 +137,7 @@ def main() -> None:
         opening_plies_min=args.opening_plies_min,
         opening_plies_max=args.opening_plies_max,
         on_game_complete=show_progress,
+        state_cls=state_cls,
     )
     print(file=sys.stderr)
     label_a = args.checkpoint_a or args.agent_a
@@ -136,6 +145,8 @@ def main() -> None:
     search_info = f"simulations={args.simulations}"
     if args.batched_mcts:
         search_info += f", batched_mcts=True, eval_batch_size={args.eval_batch_size}"
+    if args.fast_game:
+        search_info += ", fast_game=True"
     using_opening_range = args.opening_plies_min is not None or args.opening_plies_max is not None
     if args.opening_plies > 0 and not using_opening_range:
         search_info += f", opening_plies={args.opening_plies}"
