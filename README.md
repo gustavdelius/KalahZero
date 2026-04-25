@@ -83,6 +83,18 @@ Or sample a different opening length each game:
 python scripts/train.py --resume checkpoints/overnight.pt --games 3000 --opening-plies-min 0 --opening-plies-max 8
 ```
 
+To train across different starting stone counts:
+
+```bash
+python scripts/train.py --resume checkpoints/residual_depth.pt --games 12000 --stones-min 4 --stones-max 6
+```
+
+Evaluate exact 6-stone play with:
+
+```bash
+python scripts/evaluate.py --checkpoint-a checkpoints/residual_depth.pt --agent-b minimax --stones 6
+```
+
 To compare network capacity experiments cleanly, start separate checkpoints:
 
 ```bash

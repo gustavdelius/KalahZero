@@ -70,6 +70,24 @@ def choose_opening_plies(
     return rng.randint(low, high)
 
 
+def choose_stones(
+    rng: random.Random,
+    stones: int = 4,
+    stones_min: int | None = None,
+    stones_max: int | None = None,
+) -> int:
+    if stones_min is None and stones_max is None:
+        low = high = stones
+    else:
+        low = stones if stones_min is None else stones_min
+        high = low if stones_max is None else stones_max
+    if low < 0 or high < 0:
+        raise ValueError("stones must be non-negative")
+    if high < low:
+        raise ValueError("stones max must be greater than or equal to min")
+    return rng.randint(low, high)
+
+
 @dataclass(frozen=True, slots=True)
 class ArenaResult:
     games: int
@@ -88,6 +106,8 @@ def arena(
     games: int = 20,
     pits: int = 6,
     stones: int = 4,
+    stones_min: int | None = None,
+    stones_max: int | None = None,
     seed: int = 0,
     opening_plies: int = 0,
     opening_plies_min: int | None = None,
@@ -102,6 +122,12 @@ def arena(
     paired_opening: GameState | None = None
     for index in range(games):
         if index % 2 == 0:
+            sampled_stones = choose_stones(
+                rng,
+                stones=stones,
+                stones_min=stones_min,
+                stones_max=stones_max,
+            )
             plies = choose_opening_plies(
                 rng,
                 opening_plies=opening_plies,
@@ -109,7 +135,7 @@ def arena(
                 opening_plies_max=opening_plies_max,
             )
             paired_opening = (
-                random_opening(plies, rng, pits=pits, stones=stones, state_cls=state_cls)
+                random_opening(plies, rng, pits=pits, stones=sampled_stones, state_cls=state_cls)
                 if plies > 0
                 else None
             )
@@ -119,7 +145,7 @@ def arena(
                 agent_a,
                 agent_b,
                 pits=pits,
-                stones=stones,
+                stones=sampled_stones,
                 initial_state=initial_state,
                 state_cls=state_cls,
             )
@@ -130,7 +156,7 @@ def arena(
                 agent_b,
                 agent_a,
                 pits=pits,
-                stones=stones,
+                stones=sampled_stones,
                 initial_state=initial_state,
                 state_cls=state_cls,
             )

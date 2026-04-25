@@ -72,6 +72,9 @@ def main() -> None:
     parser.add_argument("--eval-batch-size", type=int, default=32)
     parser.add_argument("--fast-game", action="store_true", help="Use the optional C++ game engine.")
     parser.add_argument("--games", type=int, default=20)
+    parser.add_argument("--stones", type=int, default=4, help="Exact starting stones per pit.")
+    parser.add_argument("--stones-min", type=int, help="Minimum starting stones per pit.")
+    parser.add_argument("--stones-max", type=int, help="Maximum starting stones per pit.")
     parser.add_argument(
         "--opening-plies",
         type=int,
@@ -132,6 +135,9 @@ def main() -> None:
             args.noise_prob,
         ),
         games=args.games,
+        stones=args.stones,
+        stones_min=args.stones_min,
+        stones_max=args.stones_max,
         seed=args.seed,
         opening_plies=args.opening_plies,
         opening_plies_min=args.opening_plies_min,
@@ -143,6 +149,13 @@ def main() -> None:
     label_a = args.checkpoint_a or args.agent_a
     label_b = args.checkpoint_b or args.agent_b
     search_info = f"simulations={args.simulations}"
+    using_stones_range = args.stones_min is not None or args.stones_max is not None
+    if using_stones_range:
+        stones_min = args.stones if args.stones_min is None else args.stones_min
+        stones_max = stones_min if args.stones_max is None else args.stones_max
+        search_info += f", stones={stones_min}..{stones_max}"
+    elif args.stones != 4:
+        search_info += f", stones={args.stones}"
     if args.batched_mcts:
         search_info += f", batched_mcts=True, eval_batch_size={args.eval_batch_size}"
     if args.fast_game:

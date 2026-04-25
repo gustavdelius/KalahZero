@@ -139,6 +139,33 @@ python scripts/evaluate.py --checkpoint-a checkpoints/overnight.pt \
 Each sampled opening is still reused with the agents swapped, so the comparison
 does not give one agent an easier opening by accident.
 
+## Evaluating Different Starting Stone Counts
+
+The standard KalahZero setting starts with four stones per pit. To evaluate the
+same checkpoint on six-stone Kalah, set:
+
+```bash
+python scripts/evaluate.py --checkpoint-a checkpoints/residual_depth.pt \
+  --agent-b minimax --games 200 --simulations 150 \
+  --stones 6 \
+  --batched-mcts --eval-batch-size 8 --fast-game
+```
+
+The evaluator can also sample a stone count:
+
+```bash
+python scripts/evaluate.py --checkpoint-a checkpoints/residual_depth.pt \
+  --agent-b minimax --games 200 --simulations 150 \
+  --stones-min 4 --stones-max 6 \
+  --batched-mcts --eval-batch-size 8 --fast-game
+```
+
+This estimates performance when:
+
+$$
+c \sim \operatorname{Uniform}\{4,5,6\}.
+$$
+
 ## Practice
 
 Run:

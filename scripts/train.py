@@ -24,6 +24,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--model-type", choices=["mlp", "residual"], help="Neural network architecture.")
     parser.add_argument("--hidden-size", type=int, help="Hidden layer width.")
     parser.add_argument("--residual-blocks", type=int, help="Residual blocks for --model-type residual.")
+    parser.add_argument("--stones", type=int, help="Exact starting stones per pit.")
+    parser.add_argument("--stones-min", type=int, help="Minimum starting stones per pit.")
+    parser.add_argument("--stones-max", type=int, help="Maximum starting stones per pit.")
     parser.add_argument("--output", help=f"Checkpoint path. Defaults to {DEFAULT_OUTPUT!r}.")
     parser.add_argument("--resume", help="Resume from an existing training checkpoint.")
     parser.add_argument(
@@ -93,9 +96,20 @@ def config_from_args(args: argparse.Namespace, saved_config: TrainConfig | None 
     if args.opening_plies_min is not None or args.opening_plies_max is not None:
         opening_plies_min = args.opening_plies_min
         opening_plies_max = args.opening_plies_max
+    stones = args.stones if args.stones is not None else base.stones
+    stones_min = base.stones_min
+    stones_max = base.stones_max
+    if args.stones is not None:
+        stones_min = None
+        stones_max = None
+    if args.stones_min is not None or args.stones_max is not None:
+        stones_min = args.stones_min
+        stones_max = args.stones_max
     return TrainConfig(
         pits=base.pits,
-        stones=base.stones,
+        stones=stones,
+        stones_min=stones_min,
+        stones_max=stones_max,
         simulations=args.simulations if args.simulations is not None else base.simulations,
         games_per_iteration=args.games if args.games is not None else base.games_per_iteration,
         batch_size=args.batch_size if args.batch_size is not None else base.batch_size,
@@ -245,6 +259,8 @@ def main() -> None:
             f"resumed {args.resume}: completed_games={completed_games}, "
             f"target_games={config.games_per_iteration}, buffer={len(buffer)}, "
             f"replay_capacity={buffer.capacity}, "
+            f"stones={config.stones}, stones_min={config.stones_min}, "
+            f"stones_max={config.stones_max}, "
             f"model_type={config.model_type}, hidden_size={config.hidden_size}, "
             f"residual_blocks={config.residual_blocks}, "
             f"batched_mcts={config.use_batched_mcts}, "

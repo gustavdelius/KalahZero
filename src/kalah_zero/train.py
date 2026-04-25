@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from typing import Callable
 
 from kalah_zero.encoding import encode_state
-from kalah_zero.evaluate import choose_opening_plies, random_opening
+from kalah_zero.evaluate import choose_opening_plies, choose_stones, random_opening
 from kalah_zero.game import GameState
 from kalah_zero.mcts import MCTS, Evaluator
 
@@ -14,6 +14,8 @@ from kalah_zero.mcts import MCTS, Evaluator
 class TrainConfig:
     pits: int = 6
     stones: int = 4
+    stones_min: int | None = None
+    stones_max: int | None = None
     simulations: int = 50
     games_per_iteration: int = 8
     batch_size: int = 64
@@ -93,7 +95,12 @@ def self_play_game(
         ),
         rng,
         pits=config.pits,
-        stones=config.stones,
+        stones=choose_stones(
+            rng,
+            stones=config.stones,
+            stones_min=config.stones_min,
+            stones_max=config.stones_max,
+        ),
         state_cls=state_cls,
     )
     trajectory: list[tuple[GameState, tuple[float, ...], int]] = []

@@ -56,6 +56,14 @@ class EncodingAndTrainingTests(unittest.TestCase):
 
         self.assertGreater(len(samples), 0)
 
+    def test_self_play_can_sample_starting_stones(self) -> None:
+        config = TrainConfig(simulations=3, stones_min=4, stones_max=6)
+
+        samples = self_play_game(UniformEvaluator(), config)
+
+        self.assertGreater(len(samples), 0)
+        self.assertIn(samples[0].state.total_stones, (48, 60, 72))
+
     def test_replay_buffer_respects_capacity(self) -> None:
         config = TrainConfig(simulations=2, stones=1)
         samples = self_play_game(UniformEvaluator(), config)
@@ -158,12 +166,18 @@ class OptionalTorchTests(unittest.TestCase):
             "0",
             "--opening-plies-max",
             "8",
+            "--stones-min",
+            "4",
+            "--stones-max",
+            "6",
         ])
         updated_config = config_from_args(args, loaded_config)
 
         self.assertEqual(updated_config.replay_capacity, 50_000)
         self.assertEqual(updated_config.opening_plies_min, 0)
         self.assertEqual(updated_config.opening_plies_max, 8)
+        self.assertEqual(updated_config.stones_min, 4)
+        self.assertEqual(updated_config.stones_max, 6)
 
         fast_args = parser.parse_args(["--fast-game"])
         fast_config = config_from_args(fast_args, loaded_config)

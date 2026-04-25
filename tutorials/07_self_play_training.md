@@ -144,6 +144,39 @@ python scripts/evaluate.py --checkpoint-a checkpoints/overnight.pt --agent-b min
   --games 200 --simulations 100 --opening-plies 4
 ```
 
+## Mixed Starting Stones
+
+The original training runs use four stones per pit:
+
+$$
+\text{stones} = 4.
+$$
+
+To teach one network to handle several starting positions, the trainer can also
+sample the number of starting stones. For example:
+
+$$
+c \sim \operatorname{Uniform}\{4,5,6\}.
+$$
+
+Then each self-play game starts from a new Kalah board with $c$ stones in every
+pit. This is useful because the network input is normalized by the total number
+of stones, but the tactics still change: six-stone openings are longer and have
+different extra-turn and capture patterns.
+
+Use:
+
+```bash
+python scripts/train.py --resume checkpoints/residual_depth.pt --games 12000 \
+  --stones-min 4 --stones-max 6
+```
+
+You can still train an exact variant:
+
+```bash
+python scripts/train.py --resume checkpoints/residual_depth.pt --games 12000 --stones 6
+```
+
 ## Safe Interruption And Resume
 
 Long CPU runs should be interruptible. CPU means central processing unit: the
