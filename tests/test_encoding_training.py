@@ -41,6 +41,14 @@ class EncodingAndTrainingTests(unittest.TestCase):
 
         self.assertGreater(len(samples), 0)
 
+    def test_self_play_can_start_from_random_opening(self) -> None:
+        config = TrainConfig(simulations=3, stones=2, opening_plies=3)
+
+        samples = self_play_game(UniformEvaluator(), config)
+
+        self.assertGreater(len(samples), 0)
+        self.assertNotEqual(samples[0].state, GameState.new_game(stones=config.stones))
+
     def test_replay_buffer_respects_capacity(self) -> None:
         config = TrainConfig(simulations=2, stones=1)
         samples = self_play_game(UniformEvaluator(), config)
@@ -116,6 +124,7 @@ class OptionalTorchTests(unittest.TestCase):
         self.assertIsNotNone(loaded_optimizer)
         self.assertIsNotNone(loaded_rng)
         self.assertEqual(loaded_config.simulations, config.simulations)
+        self.assertEqual(loaded_config.opening_plies, config.opening_plies)
         self.assertEqual(completed_games, 2)
         self.assertEqual(len(loaded_buffer), len(buffer))
 

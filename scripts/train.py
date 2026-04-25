@@ -47,6 +47,11 @@ def build_parser() -> argparse.ArgumentParser:
         type=int,
         help="Number of MCTS leaf positions to evaluate at once when using --batched-mcts.",
     )
+    parser.add_argument(
+        "--opening-plies",
+        type=int,
+        help="Start each self-play game after this many random legal opening moves.",
+    )
     return parser
 
 
@@ -74,6 +79,7 @@ def config_from_args(args: argparse.Namespace, saved_config: TrainConfig | None 
             if args.eval_batch_size is not None
             else base.eval_batch_size
         ),
+        opening_plies=args.opening_plies if args.opening_plies is not None else base.opening_plies,
     )
 
 
@@ -167,7 +173,7 @@ def main() -> None:
         print(
             f"resumed {args.resume}: completed_games={completed_games}, "
             f"target_games={config.games_per_iteration}, buffer={len(buffer)}, "
-            f"batched_mcts={config.use_batched_mcts}"
+            f"batched_mcts={config.use_batched_mcts}, opening_plies={config.opening_plies}"
         )
     else:
         config = config_from_args(args)

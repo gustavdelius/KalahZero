@@ -101,6 +101,34 @@ def add_many(self, samples: list[TrainingSample]) -> None:
         del self.samples[:overflow]
 ```
 
+## Random Opening Self-Play
+
+If every self-play game begins at the same initial board, the replay buffer can
+become too focused on common openings. To broaden the training distribution, the
+trainer can make $k$ random legal moves before search-based self-play begins:
+
+$$
+s_{\text{start}} = T(T(\cdots T(s_0,a_0),a_1)\cdots,a_{k-1}).
+$$
+
+The random opening moves are not stored as training samples. They only choose a
+less familiar starting state. After that, the usual AlphaZero loop takes over:
+search, store the visit-count policy, play a move, and later attach the final
+outcome.
+
+Use:
+
+```bash
+python scripts/train.py --resume checkpoints/overnight.pt --games 2500 --opening-plies 4
+```
+
+This is especially useful when evaluation also uses random openings:
+
+```bash
+python scripts/evaluate.py --checkpoint-a checkpoints/overnight.pt --agent-b minimax \
+  --games 200 --simulations 100 --opening-plies 4
+```
+
 ## Safe Interruption And Resume
 
 Long CPU runs should be interruptible. CPU means central processing unit: the

@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 from typing import Callable
 
 from kalah_zero.encoding import encode_state
+from kalah_zero.evaluate import random_opening
 from kalah_zero.game import GameState
 from kalah_zero.mcts import MCTS, Evaluator
 
@@ -24,6 +25,7 @@ class TrainConfig:
     seed: int = 0
     use_batched_mcts: bool = False
     eval_batch_size: int = 32
+    opening_plies: int = 0
 
 
 @dataclass(frozen=True, slots=True)
@@ -71,7 +73,12 @@ def self_play_game(
         )
     else:
         mcts = mcts_factory()
-    state = GameState.new_game(pits=config.pits, stones=config.stones)
+    state = random_opening(
+        config.opening_plies,
+        rng,
+        pits=config.pits,
+        stones=config.stones,
+    )
     trajectory: list[tuple[GameState, tuple[float, ...], int]] = []
     move_index = 0
     while not state.is_terminal():

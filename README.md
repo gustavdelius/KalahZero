@@ -55,6 +55,13 @@ The same opt-in works for checkpoint evaluation:
 python scripts/evaluate.py --checkpoint-a checkpoints/overnight.pt --agent-b minimax --simulations 200 --batched-mcts
 ```
 
+To train on less opening-specific positions, start each self-play game after a
+few random legal moves:
+
+```bash
+python scripts/train.py --resume checkpoints/overnight.pt --games 2500 --opening-plies 4
+```
+
 Play against a baseline:
 
 ```bash
