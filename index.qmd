@@ -1,10 +1,10 @@
 ---
 title: "KalahZero"
-subtitle: "Learn AlphaZero by building it for Kalah"
+subtitle: "Learn AlphaZero by building it for Kalah (a.k.a. Serata)"
 ---
 
 KalahZero is a teaching project for understanding AlphaZero from first
-principles. The project pairs derivation-first tutorials with a compact Python
+principles by applying the concepts to the game of Kalah (a.k.a. Serata). The project pairs derivation-first tutorials with a compact Python
 implementation of Kalah, baseline agents, Monte Carlo Tree Search, a PyTorch
 policy-value network, self-play training, and evaluation tools.
 
@@ -12,19 +12,30 @@ You do not need to arrive already knowing what an AI agent, a neural network,
 or a search algorithm is. If you are simply curious about how a computer can
 learn to play a board game, this site has a gentle route for you too.
 
-The core loop is:
 
-$$
-\text{rules}
-\rightarrow
-\text{search}
-\rightarrow
-\text{training targets}
-\rightarrow
-\text{neural network}
-\rightarrow
-\text{stronger search}.
-$$
+## A Little History
+
+**AlphaZero** belongs to a line of game-playing AI systems from Google DeepMind.
+AlphaGo first drew worldwide attention by defeating top human Go players, and
+AlphaGo Zero then showed that a system could become superhuman at Go through
+self-play rather than by copying human games. In late 2017, DeepMind introduced
+[AlphaZero](https://deepmind.google/blog/alphazero-shedding-new-light-grand-games-chess-shogi-and-go/),
+which used the same broad recipe to learn chess, shogi, and Go from the rules
+alone. The full AlphaZero evaluation was published in *Science* in 2018.
+
+**Kalah** has a different kind of history. It is part of the much larger mancala
+family of "sowing" games: games where players move seeds, stones, or counters
+through rows of pits. Mancala games have many regional forms and long, diverse
+histories across Africa, the Middle East, Asia, and beyond. [Kalah itself](https://boardgamegeek.com/wiki/page/thing%3A2448)
+is a modern rule set, usually credited to William Julius Champion Jr., who
+invented it around 1940, began selling it in the 1940s, and patented versions of
+the board and rules in the 1950s. 
+
+In Germany the game is known as **Serata**. In 1978 a German student named Paul Erich Firelinghaus entered the prestigious "Jugend forscht" science competition with a computer program designed to solve Serata, and he won first place in the mathematics category.
+
+Technology has moved on since 1978. Here, the small,
+approachable board game Serata becomes a place to study ideas from one of the most
+influential AI game systems of the last decade.
 
 ## Start Here
 
@@ -44,7 +55,8 @@ technical background.
 ### Prefer to Play First?
 
 Open [the Kalah web app](web/index.qmd), try a few moves, and watch how simple
-computer opponents make choices.
+computer opponents make choices. If you want the board rules nearby, open
+[Rules and Controls](web/rules.qmd).
 :::
 
 ::: {.beginner-card}
@@ -84,28 +96,3 @@ KalahZero is about a small cycle:
 The technical tutorials keep the equations, code, and experiments. The beginner
 material gives you the story first, so those details have somewhere friendly to
 land.
-
-## Local Commands
-
-```bash
-source .venv/bin/activate
-python -m pytest
-python scripts/inspect_position.py --simulations 100 --tree-depth 2
-python scripts/train.py --games 4 --simulations 25 --epochs 2
-```
-
-## Why This Site Exists
-
-GitHub's Markdown renderer does not display all LaTeX math consistently in
-plain `.md` files. Quarto renders the tutorials as a website with MathJax, so
-equations such as
-
-$$
-\mathcal{L}(\theta)
-=
-(z - v_\theta(s))^2
-- \sum_a \pi(a \mid s)\log p_\theta(a \mid s)
-+ \lambda \lVert \theta \rVert_2^2
-$$
-
-display properly in the browser.

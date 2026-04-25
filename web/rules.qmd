@@ -1,0 +1,113 @@
+---
+title: "Rules and Controls"
+---
+
+This page explains how to play the browser version of KalahZero and what each
+control does. You can read it before playing, or keep it open in another tab.
+
+## Goal
+
+Kalah is a two-player sowing game. The goal is to finish with more stones in
+your store than your opponent has in theirs.
+
+In the browser game:
+
+- **South** is the bottom player.
+- **North** is the top player.
+- Each player owns the six small pits on their side.
+- Each player also owns one large store.
+- Stones in your store are your score.
+
+## Taking a Turn
+
+On your turn, choose one of your non-empty pits.
+
+The game then:
+
+1. picks up all stones from that pit,
+2. drops them one by one into the following pits and your own store,
+3. skips your opponent's store,
+4. applies any extra-turn or capture rule,
+5. passes the move to the next player when appropriate.
+
+Only legal pits are clickable. During animation or while the computer is
+thinking, the board waits until the move is finished.
+
+## Extra Turns
+
+You move again if the final stone of your move lands in your own store.
+
+This project also gives you another move when your move captures stones. That
+is the rule used by the tutorials and the browser game, so search agents and
+human players are playing the same version.
+
+## Captures
+
+A capture happens when your final stone lands in one of your own empty pits and
+the opposite pit on your opponent's side contains stones.
+
+When that happens:
+
+- your final stone is captured,
+- the stones in the opposite pit are captured,
+- all captured stones move into your store,
+- you get another move in this project variant.
+
+## Ending the Game
+
+The game ends as soon as one player has no stones left in any of their six
+pits.
+
+When that happens, all remaining stones on each side move into that side's own
+store. The player with the larger store total wins. If the totals are equal,
+the game is a draw.
+
+## Board Display
+
+The score panel shows the current store totals for North and South. The status
+line tells you whose turn it is, whether the computer is thinking, or who won
+the finished game.
+
+Move labels use pit numbers from the current player's side. For example,
+`South 3` means South moved from South's third pit.
+
+Move labels can also include:
+
+- **capture**: the move captured stones,
+- **again**: the same player gets another move.
+
+## Controls
+
+**Opponent** chooses the computer player:
+
+- **Greedy** chooses the move that immediately improves its score margin the
+  most.
+- **Random** chooses randomly from legal moves.
+- **Trained agent** uses the browser-side trained search agent.
+
+**Search** appears when the trained agent is selected. Move the slider toward
+**Fast** for quicker responses, or toward **Deep** for more search before the
+agent chooses.
+
+**You play as** chooses your side. Changing sides starts a new game.
+
+**Starting stones** chooses how many stones begin in each pit. Changing this
+starts a new game.
+
+**Animation speed** changes how quickly stones move around the board. It does
+not change the rules or the computer's strength.
+
+**New Game** restarts with the current settings.
+
+## Move History
+
+The move history lists the most recent moves first. Click a move to rewind the
+board to the position after that move.
+
+After rewinding, you can continue from that position. If it is the computer's
+turn, it will move from the rewound position using the currently selected
+opponent.
+
+## Ready to Play
+
+Open [Play Kalah](index.qmd) when you are ready to try a game.

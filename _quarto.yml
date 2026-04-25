@@ -23,6 +23,8 @@ website:
         text: Tutorials
       - href: web/index.qmd
         text: Play
+      - href: web/rules.qmd
+        text: Rules
     right:
       - icon: github
         href: "https://github.com/gustavdelius/Serata"
