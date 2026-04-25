@@ -2,7 +2,7 @@
   "use strict";
 
   const PITS = 6;
-  const STONES = 4;
+  const DEFAULT_STONES = 4;
   const STONE_COLORS = ['#d4a017', '#c85a10', '#a82010', '#2e5e2e', '#8a7860', '#c8a050'];
   const STORE_0 = PITS;
   const STORE_1 = 2 * PITS + 1;
@@ -20,6 +20,7 @@
   })();
 
   const elements = {};
+  let startingStones = DEFAULT_STONES;
   let state = newGame();
   let humanPlayer = 0;
   let opponent = "greedy";
@@ -44,8 +45,8 @@
     return Math.floor(Math.random() * STONE_COLORS.length);
   }
 
-  function newGame() {
-    const board = [...Array(PITS).fill(STONES), 0, ...Array(PITS).fill(STONES), 0];
+  function newGame(stones = startingStones) {
+    const board = [...Array(PITS).fill(stones), 0, ...Array(PITS).fill(stones), 0];
     const colors = board.map(count => Array.from({ length: count }, randomColorIdx));
     return { board, colors, currentPlayer: 0 };
   }
@@ -292,6 +293,7 @@
     elements.agentSimulationsControl = document.querySelector("#agent-simulations-control");
     elements.agentSimulations = document.querySelector("#agent-simulations");
     elements.humanPlayer = document.querySelector("#human-player");
+    elements.startingStones = document.querySelector("#starting-stones");
     elements.newGame = document.querySelector("#new-game");
     elements.animSpeed = document.querySelector("#anim-speed");
 
@@ -305,6 +307,10 @@
       humanPlayer = Number(elements.humanPlayer.value);
       resetGame();
     });
+    elements.startingStones.addEventListener("change", () => {
+      startingStones = Number(elements.startingStones.value);
+      resetGame();
+    });
     elements.newGame.addEventListener("click", resetGame);
 
     render();
@@ -313,7 +319,7 @@
   }
 
   function resetGame() {
-    state = newGame();
+    state = newGame(startingStones);
     history = [];
     busy = false;
     animating = false;
@@ -586,7 +592,7 @@
   function summaryText() {
     const south = state.board.slice(0, PITS).join(" ");
     const north = state.board.slice(PITS + 1, STORE_1).join(" ");
-    return `South [${south}] | North [${north}]`;
+    return `${startingStones} stones | South [${south}] | North [${north}]`;
   }
 
   function renderHistory() {
@@ -604,6 +610,16 @@
   }
 
   if (typeof module !== "undefined") {
-    module.exports = { newGame, applyMove, legalActions, isTerminal, PITS, STORE_0, STORE_1 };
+    module.exports = {
+      newGame,
+      applyMove,
+      legalActions,
+      isTerminal,
+      PITS,
+      STONES: DEFAULT_STONES,
+      DEFAULT_STONES,
+      STORE_0,
+      STORE_1,
+    };
   }
 })();
