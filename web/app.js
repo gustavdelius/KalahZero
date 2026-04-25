@@ -305,9 +305,9 @@
     const legal = isHumanTurn() && player === humanPlayer && legalActions(state).includes(action);
     button.type = "button";
     button.className = `pit-button ${legal ? "legal" : "disabled"}`;
-    // Vertical board: south (player 0) in left column, pit 0 at bottom (row 7); north in right column, pit 0 at top (row 2)
+    // The pit next to each player's bank is action 5 in the engine.
     button.style.gridColumn = String(player === 0 ? 1 : 2);
-    button.style.gridRow = String(player === 0 ? PITS + 1 - action : action + 2);
+    button.style.gridRow = String(player === 0 ? action + 2 : PITS + 1 - action);
     button.disabled = !legal;
     button.setAttribute("aria-label", `${playerName(player)} pit ${action + 1}, ${state.board[index]} stones`);
     button.addEventListener("click", () => onPitClick(action));
