@@ -7,6 +7,8 @@
   const STORE_0 = PITS;
   const STORE_1 = 2 * PITS + 1;
   const HUMAN_DELAY_MS = 220;
+  // Indexed by slider value 1–5 (slow → fast).
+  const SPEED_DELAYS = [800, 500, 300, 150, 80];
 
   const elements = {};
   let state = newGame();
@@ -14,7 +16,17 @@
   let opponent = "greedy";
   let history = [];
   let busy = false;
+  let animating = false;
   let agentError = "";
+
+  function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  function stoneDropDelay() {
+    const val = elements.animSpeed ? Number(elements.animSpeed.value) : 3;
+    return SPEED_DELAYS[Math.min(Math.max(val - 1, 0), SPEED_DELAYS.length - 1)];
+  }
 
   function randomColorIdx() {
     return Math.floor(Math.random() * STONE_COLORS.length);
@@ -132,6 +144,97 @@
     }
   }
 
+  // Returns an array of intermediate board snapshots during sowing,
+  // one per stone placed (plus step 0 for the pickup).
+  function computeSowingSteps(gameState, action) {
+    const steps = [];
+    const board = [...gameState.board];
+    const colors = gameState.colors.map(arr => [...arr]);
+    const mover = gameState.currentPlayer;
+    const source = pitIndex(mover, action);
+
+    let remaining = board[source];
+    const pool = colors[source].slice();
+
+    const snap = () => ({ board: [...board], colors: colors.map(a => [...a]), activePit: source, sourcePit: source });
+
+    // Step 0: source pit highlighted with all stones still present.
+    steps.push(snap());
+
+    let index = source;
+    let poolIdx = 0;
+    while (remaining > 0) {
+      index = (index + 1) % board.length;
+      if (index === storeIndex(1 - mover)) continue;
+
+      // Highlight the destination before the stone lands; source still full.
+      steps.push({ ...snap(), activePit: index });
+
+      // Remove one stone from source, place in destination.
+      board[source] -= 1;
+      colors[source] = pool.slice(poolIdx + 1);
+      board[index] += 1;
+      colors[index].push(pool[poolIdx]);
+      poolIdx++;
+      remaining--;
+
+      // Stone has landed; source shows one fewer stone.
+      steps.push({ ...snap(), activePit: index });
+    }
+
+    return { steps, mover, landingIndex: index };
+  }
+
+  // Returns animation steps for capture and/or end-of-game sweep,
+  // starting from the board state in lastStep (after sowing).
+  function computePostSowSteps(lastStep, mover, landingIndex) {
+    const steps = [];
+    const board = [...lastStep.board];
+    const colors = lastStep.colors.map(a => [...a]);
+    const ownStore = storeIndex(mover);
+
+    const snap = (extra) => ({ board: [...board], colors: colors.map(a => [...a]), ...extra });
+
+    // Capture
+    if (pitIndices(mover).includes(landingIndex) && board[landingIndex] === 1) {
+      const opposite = oppositeIndex(landingIndex);
+      if (board[opposite] > 0) {
+        steps.push(snap({ activePit: landingIndex, capturePit: opposite }));
+
+        colors[ownStore].push(...colors[landingIndex], ...colors[opposite]);
+        colors[landingIndex] = [];
+        colors[opposite] = [];
+        board[ownStore] += board[opposite] + 1;
+        board[opposite] = 0;
+        board[landingIndex] = 0;
+
+        steps.push(snap({ activePit: ownStore }));
+      }
+    }
+
+    // Sweep
+    if (sideEmpty(board, 0) || sideEmpty(board, 1)) {
+      const sweepPits = [0, 1].flatMap(p => pitIndices(p).filter(i => board[i] > 0));
+      if (sweepPits.length > 0) {
+        steps.push(snap({ sweepPits }));
+
+        for (const player of [0, 1]) {
+          const store = storeIndex(player);
+          for (const idx of pitIndices(player)) {
+            board[store] += board[idx];
+            colors[store].push(...colors[idx]);
+            colors[idx] = [];
+            board[idx] = 0;
+          }
+        }
+
+        steps.push(snap({ allStoresActive: true }));
+      }
+    }
+
+    return steps;
+  }
+
   function score(player) {
     return state.board[storeIndex(player)];
   }
@@ -178,6 +281,7 @@
     elements.agentUrl = document.querySelector("#agent-url");
     elements.humanPlayer = document.querySelector("#human-player");
     elements.newGame = document.querySelector("#new-game");
+    elements.animSpeed = document.querySelector("#anim-speed");
 
     elements.opponent.addEventListener("change", () => {
       opponent = elements.opponent.value;
@@ -200,14 +304,19 @@
     state = newGame();
     history = [];
     busy = false;
+    animating = false;
     agentError = "";
     render();
     maybeAgentMove();
   }
 
-  function onPitClick(action) {
+  async function onPitClick(action) {
     if (busy || !isHumanTurn() || !legalActions(state).includes(action)) return;
-    playAction(action);
+    busy = true;
+    render();
+    await playAction(action);
+    busy = false;
+    render();
     maybeAgentMove();
   }
 
@@ -219,7 +328,7 @@
       try {
         const action = await chooseOpponentAction(state);
         agentError = "";
-        playAction(action);
+        await playAction(action);
         busy = false;
         render();
         maybeAgentMove();
@@ -260,7 +369,23 @@
     return payload.action;
   }
 
-  function playAction(action) {
+  async function playAction(action) {
+    animating = true;
+    const { steps: sowingSteps, mover, landingIndex } = computeSowingSteps(state, action);
+    for (let i = 0; i < sowingSteps.length; i++) {
+      if (i > 0) await sleep(stoneDropDelay());
+      renderBoard(sowingSteps[i]);
+    }
+
+    const postSteps = computePostSowSteps(sowingSteps[sowingSteps.length - 1], mover, landingIndex);
+    for (const step of postSteps) {
+      await sleep(stoneDropDelay() * 2);
+      renderBoard(step);
+    }
+
+    await sleep(stoneDropDelay());
+    animating = false;
+
     const before = state.currentPlayer;
     state = applyMove(state, action);
     const tags = [];
@@ -268,7 +393,6 @@
     if (state.lastMove.extraTurn) tags.push("again");
     history.unshift(`${playerName(before)} ${action + 1}${tags.length ? ` (${tags.join(", ")})` : ""}`);
     history = history.slice(0, 18);
-    render();
   }
 
   function render() {
@@ -276,50 +400,66 @@
     elements.scoreSouth.textContent = String(score(0));
     elements.status.textContent = statusText();
     elements.positionSummary.textContent = summaryText();
-
-    renderStore(elements.northStore, state.board[STORE_1], "North store", state.colors[STORE_1]);
-    renderStore(elements.southStore, state.board[STORE_0], "South store", state.colors[STORE_0]);
-    renderPitRows();
+    renderStores(state);
+    renderPitRows(state);
     renderHistory();
+  }
+
+  // Renders only the board pits and stores from a display state (used during animation).
+  function renderBoard(displayState) {
+    renderStores(displayState);
+    renderPitRows(displayState);
   }
 
   function updateAgentUrlControl() {
     elements.agentUrlControl.classList.toggle("hidden", opponent !== "trained");
   }
 
-  function renderPitRows() {
+  function renderStores(boardState) {
+    const activeNorth = boardState.activePit === STORE_1 || boardState.allStoresActive;
+    const activeSouth = boardState.activePit === STORE_0 || boardState.allStoresActive;
+    renderStore(elements.northStore, boardState.board[STORE_1], "North store", boardState.colors[STORE_1], activeNorth);
+    renderStore(elements.southStore, boardState.board[STORE_0], "South store", boardState.colors[STORE_0], activeSouth);
+  }
+
+  function renderPitRows(displayState) {
     elements.northRow.innerHTML = "";
     elements.southRow.innerHTML = "";
 
     for (let action = PITS - 1; action >= 0; action -= 1) {
-      elements.northRow.appendChild(createPit(1, action));
+      elements.northRow.appendChild(createPit(1, action, displayState));
     }
     for (let action = 0; action < PITS; action += 1) {
-      elements.southRow.appendChild(createPit(0, action));
+      elements.southRow.appendChild(createPit(0, action, displayState));
     }
   }
 
-  function createPit(player, action) {
+  function createPit(player, action, displayState) {
     const index = pitIndex(player, action);
     const button = document.createElement("button");
-    const legal = isHumanTurn() && player === humanPlayer && legalActions(state).includes(action);
+    const legal = !busy && !animating && isHumanTurn() && player === humanPlayer && legalActions(state).includes(action);
     button.type = "button";
     button.className = `pit-button ${legal ? "legal" : "disabled"}`;
+    if (displayState.activePit === index) button.classList.add("sow-active");
+    if (displayState.sourcePit === index && displayState.activePit !== index) button.classList.add("sow-source");
+    if (displayState.capturePit === index) button.classList.add("capture-source");
+    if (displayState.sweepPits && displayState.sweepPits.includes(index)) button.classList.add("sweep");
     // The pit next to each player's bank is action 5 in the engine.
     button.style.gridColumn = String(player === 0 ? 1 : 2);
     button.style.gridRow = String(player === 0 ? action + 2 : PITS + 1 - action);
     button.disabled = !legal;
-    button.setAttribute("aria-label", `${playerName(player)} pit ${action + 1}, ${state.board[index]} stones`);
+    button.setAttribute("aria-label", `${playerName(player)} pit ${action + 1}, ${displayState.board[index]} stones`);
     button.addEventListener("click", () => onPitClick(action));
-    button.appendChild(stonesLayer(state.board[index], `pit-${player}-${action}`, state.colors[index]));
-    button.appendChild(count(state.board[index]));
+    button.appendChild(stonesLayer(displayState.board[index], `pit-${player}-${action}`, displayState.colors[index]));
+    button.appendChild(count(displayState.board[index]));
     return button;
   }
 
-  function renderStore(container, stones, name, stoneColors) {
+  function renderStore(container, stones, name, stoneColors, active) {
     container.innerHTML = "";
     container.setAttribute("aria-label", `${name}, ${stones} stones`);
     container.appendChild(stonesLayer(stones, name, stoneColors));
+    container.classList.toggle("sow-active", !!active);
   }
 
   function label(text) {
@@ -396,6 +536,7 @@
       return `${score(0) > score(1) ? "South" : "North"} wins, ${score(0)}-${score(1)}`;
     }
     if (agentError) return `Agent server error: ${agentError}`;
+    if (animating) return `${playerName(state.currentPlayer)} moving`;
     if (busy) return `${playerName(state.currentPlayer)} thinking`;
     return `${playerName(state.currentPlayer)} to move`;
   }

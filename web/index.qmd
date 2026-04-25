@@ -69,6 +69,11 @@ format:
           <option value="1">North</option>
         </select>
       </label>
+      <label>
+        Animation speed
+        <input id="anim-speed" type="range" min="1" max="5" value="3">
+        <span class="range-labels"><span>Slow</span><span>Fast</span></span>
+      </label>
       <button id="new-game" type="button">New Game</button>
     </div>
 
