@@ -92,7 +92,7 @@ class OptionalTorchTests(unittest.TestCase):
             from kalah_zero.network import KalahNet
 
             sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
-            from scripts.train import load_training_checkpoint, save_training_checkpoint
+            from scripts.train import build_parser, config_from_args, load_training_checkpoint, save_training_checkpoint
         except ModuleNotFoundError:
             self.skipTest("PyTorch is not installed")
 
@@ -127,6 +127,12 @@ class OptionalTorchTests(unittest.TestCase):
         self.assertEqual(loaded_config.opening_plies, config.opening_plies)
         self.assertEqual(completed_games, 2)
         self.assertEqual(len(loaded_buffer), len(buffer))
+
+        parser = build_parser()
+        args = parser.parse_args(["--replay-capacity", "50000"])
+        updated_config = config_from_args(args, loaded_config)
+
+        self.assertEqual(updated_config.replay_capacity, 50_000)
 
 
 if __name__ == "__main__":

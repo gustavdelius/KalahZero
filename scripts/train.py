@@ -20,6 +20,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--simulations", type=int, help="MCTS simulations per move.")
     parser.add_argument("--epochs", type=int, help="Training epochs after each self-play game.")
     parser.add_argument("--batch-size", type=int, help="Replay samples per training batch.")
+    parser.add_argument("--replay-capacity", type=int, help="Maximum number of self-play samples to keep.")
     parser.add_argument("--output", help=f"Checkpoint path. Defaults to {DEFAULT_OUTPUT!r}.")
     parser.add_argument("--resume", help="Resume from an existing training checkpoint.")
     parser.add_argument(
@@ -66,7 +67,11 @@ def config_from_args(args: argparse.Namespace, saved_config: TrainConfig | None 
         epochs=args.epochs if args.epochs is not None else base.epochs,
         learning_rate=base.learning_rate,
         weight_decay=base.weight_decay,
-        replay_capacity=base.replay_capacity,
+        replay_capacity=(
+            args.replay_capacity
+            if args.replay_capacity is not None
+            else base.replay_capacity
+        ),
         temperature_moves=base.temperature_moves,
         seed=args.seed if args.seed is not None else base.seed,
         use_batched_mcts=(
@@ -170,9 +175,11 @@ def main() -> None:
     if args.resume:
         model, optimizer, buffer, rng, saved_config, completed_games = load_training_checkpoint(Path(args.resume))
         config = config_from_args(args, saved_config)
+        buffer.capacity = config.replay_capacity
         print(
             f"resumed {args.resume}: completed_games={completed_games}, "
             f"target_games={config.games_per_iteration}, buffer={len(buffer)}, "
+            f"replay_capacity={buffer.capacity}, "
             f"batched_mcts={config.use_batched_mcts}, opening_plies={config.opening_plies}"
         )
     else:
