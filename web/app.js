@@ -3,6 +3,7 @@
 
   const PITS = 6;
   const STONES = 4;
+  const STONE_COLORS = ['#d4a017', '#c85a10', '#a82010', '#2e5e2e', '#8a7860', '#c8a050'];
   const STORE_0 = PITS;
   const STORE_1 = 2 * PITS + 1;
   const HUMAN_DELAY_MS = 220;
@@ -15,11 +16,14 @@
   let busy = false;
   let agentError = "";
 
+  function randomColorIdx() {
+    return Math.floor(Math.random() * STONE_COLORS.length);
+  }
+
   function newGame() {
-    return {
-      board: [...Array(PITS).fill(STONES), 0, ...Array(PITS).fill(STONES), 0],
-      currentPlayer: 0,
-    };
+    const board = [...Array(PITS).fill(STONES), 0, ...Array(PITS).fill(STONES), 0];
+    const colors = board.map(count => Array.from({ length: count }, randomColorIdx));
+    return { board, colors, currentPlayer: 0 };
   }
 
   function storeIndex(player) {
@@ -64,16 +68,21 @@
     }
 
     const board = [...gameState.board];
+    const colors = gameState.colors.map(arr => [...arr]);
     const mover = gameState.currentPlayer;
     const source = pitIndex(mover, action);
     let stones = board[source];
+    const pool = colors[source];  // colors of the stones being lifted
     board[source] = 0;
+    colors[source] = [];
 
     let index = source;
+    let poolIdx = 0;
     while (stones > 0) {
       index = (index + 1) % board.length;
       if (index === storeIndex(1 - mover)) continue;
       board[index] += 1;
+      colors[index].push(pool[poolIdx++]);
       stones -= 1;
     }
 
@@ -83,6 +92,9 @@
       const opposite = oppositeIndex(index);
       const captured = board[opposite];
       if (captured > 0) {
+        colors[ownStore].push(...colors[index], ...colors[opposite]);
+        colors[index] = [];
+        colors[opposite] = [];
         board[opposite] = 0;
         board[index] = 0;
         board[ownStore] += captured + 1;
@@ -92,11 +104,12 @@
 
     const nextPlayer = index === ownStore || capturedStones ? mover : 1 - mover;
     if (sideEmpty(board, 0) || sideEmpty(board, 1)) {
-      sweepRemaining(board);
+      sweepRemaining(board, colors);
     }
 
     return {
       board,
+      colors,
       currentPlayer: nextPlayer,
       lastMove: {
         player: mover,
@@ -107,11 +120,13 @@
     };
   }
 
-  function sweepRemaining(board) {
+  function sweepRemaining(board, colors) {
     for (const player of [0, 1]) {
       const store = storeIndex(player);
       for (const index of pitIndices(player)) {
         board[store] += board[index];
+        colors[store].push(...colors[index]);
+        colors[index] = [];
         board[index] = 0;
       }
     }
@@ -262,8 +277,8 @@
     elements.status.textContent = statusText();
     elements.positionSummary.textContent = summaryText();
 
-    renderStore(elements.northStore, state.board[STORE_1], "North store");
-    renderStore(elements.southStore, state.board[STORE_0], "South store");
+    renderStore(elements.northStore, state.board[STORE_1], "North store", state.colors[STORE_1]);
+    renderStore(elements.southStore, state.board[STORE_0], "South store", state.colors[STORE_0]);
     renderPitRows();
     renderHistory();
   }
@@ -290,23 +305,20 @@
     const legal = isHumanTurn() && player === humanPlayer && legalActions(state).includes(action);
     button.type = "button";
     button.className = `pit-button ${legal ? "legal" : "disabled"}`;
-    button.style.gridColumn = String(player === 0 ? action + 2 : PITS - action + 1);
-    button.style.gridRow = String(player === 0 ? 2 : 1);
+    // Vertical board: south (player 0) in left column, pit 0 at bottom (row 7); north in right column, pit 0 at top (row 2)
+    button.style.gridColumn = String(player === 0 ? 1 : 2);
+    button.style.gridRow = String(player === 0 ? PITS + 1 - action : action + 2);
     button.disabled = !legal;
     button.setAttribute("aria-label", `${playerName(player)} pit ${action + 1}, ${state.board[index]} stones`);
     button.addEventListener("click", () => onPitClick(action));
-    button.appendChild(label(`Pit ${action + 1}`));
-    button.appendChild(stonesLayer(state.board[index], `pit-${player}-${action}`));
-    button.appendChild(count(state.board[index]));
+    button.appendChild(stonesLayer(state.board[index], `pit-${player}-${action}`, state.colors[index]));
     return button;
   }
 
-  function renderStore(container, stones, name) {
+  function renderStore(container, stones, name, stoneColors) {
     container.innerHTML = "";
     container.setAttribute("aria-label", `${name}, ${stones} stones`);
-    container.appendChild(label(name.replace(" store", "")));
-    container.appendChild(stonesLayer(stones, name));
-    container.appendChild(count(stones));
+    container.appendChild(stonesLayer(stones, name, stoneColors));
   }
 
   function label(text) {
@@ -323,16 +335,17 @@
     return span;
   }
 
-  function stonesLayer(amount, salt) {
+  function stonesLayer(amount, salt, stoneColors) {
     const layer = document.createElement("span");
     layer.className = "stones";
     const visible = Math.min(amount, 18);
     for (let i = 0; i < visible; i += 1) {
       const stone = document.createElement("span");
       stone.className = "stone";
-      const point = stonePoint(i, amount, salt);
-      stone.style.left = `${point.x}%`;
-      stone.style.top = `${point.y}%`;
+      const { x, y } = stonePoint(i, amount, salt);
+      stone.style.left = `${x}%`;
+      stone.style.top = `${y}%`;
+      stone.style.setProperty("--stone-color", STONE_COLORS[stoneColors[i] % STONE_COLORS.length]);
       layer.appendChild(stone);
     }
     return layer;
@@ -344,10 +357,7 @@
     for (let i = 0; i < text.length; i += 1) {
       hash = (hash * 31 + text.charCodeAt(i)) >>> 0;
     }
-    return {
-      x: 8 + (hash % 76),
-      y: 8 + ((hash >>> 8) % 76),
-    };
+    return { x: 8 + (hash % 76), y: 8 + ((hash >>> 8) % 76) };
   }
 
   function statusText() {

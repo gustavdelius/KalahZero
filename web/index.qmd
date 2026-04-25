@@ -12,12 +12,44 @@ format:
 
 ```{=html}
 <main class="app-shell">
-  <section class="topbar" aria-label="Game controls">
-    <div>
+
+  <section class="board-wrap" aria-label="Kalah board">
+    <div class="board" id="board">
+      <div class="store store-north" id="store-north" aria-label="North store"></div>
+      <div class="pit-row north-row" id="north-row"></div>
+      <div class="pit-row south-row" id="south-row"></div>
+      <div class="store store-south" id="store-south" aria-label="South store"></div>
+    </div>
+  </section>
+
+  <div class="sidebar">
+
+    <header class="game-title">
       <p class="eyebrow">KalahZero</p>
       <h1>Kalah</h1>
+    </header>
+
+    <div class="score-panel" aria-live="polite">
+      <div class="player-score north-score">
+        <div class="player-info">
+          <span class="player-pip north-pip"></span>
+          <span>North</span>
+        </div>
+        <strong id="score-north">0</strong>
+      </div>
+      <div class="status-row">
+        <p id="status" class="status">South to move</p>
+      </div>
+      <div class="player-score south-score">
+        <div class="player-info">
+          <span class="player-pip south-pip"></span>
+          <span>South</span>
+        </div>
+        <strong id="score-south">0</strong>
+      </div>
     </div>
-    <div class="controls">
+
+    <div class="controls-panel">
       <label>
         Opponent
         <select id="opponent">
@@ -31,7 +63,7 @@ format:
         <input id="agent-url" type="url" value="http://127.0.0.1:8765/move">
       </label>
       <label>
-        You
+        You play as
         <select id="human-player">
           <option value="0" selected>South</option>
           <option value="1">North</option>
@@ -39,35 +71,14 @@ format:
       </label>
       <button id="new-game" type="button">New Game</button>
     </div>
-  </section>
 
-  <section class="scorebar" aria-live="polite">
-    <div class="score-card north">
-      <span>North</span>
-      <strong id="score-north">0</strong>
+    <div class="history-panel">
+      <p class="panel-label">Position</p>
+      <p id="position-summary" class="position-text">Opening position</p>
+      <p class="panel-label">Move history</p>
+      <ol id="history" class="history"></ol>
     </div>
-    <p id="status" class="status">South to move</p>
-    <div class="score-card south">
-      <span>South</span>
-      <strong id="score-south">0</strong>
-    </div>
-  </section>
 
-  <section class="board-wrap" aria-label="Kalah board">
-    <div class="board" id="board">
-      <div class="store store-north" id="store-north" aria-label="North store"></div>
-      <div class="pit-row north-row" id="north-row"></div>
-      <div class="pit-row south-row" id="south-row"></div>
-      <div class="store store-south" id="store-south" aria-label="South store"></div>
-    </div>
-  </section>
-
-  <section class="move-panel" aria-label="Move history">
-    <div>
-      <h2>Position</h2>
-      <p id="position-summary">Opening position</p>
-    </div>
-    <ol id="history" class="history"></ol>
-  </section>
+  </div>
 </main>
 ```
