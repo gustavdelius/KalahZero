@@ -312,6 +312,7 @@
     button.setAttribute("aria-label", `${playerName(player)} pit ${action + 1}, ${state.board[index]} stones`);
     button.addEventListener("click", () => onPitClick(action));
     button.appendChild(stonesLayer(state.board[index], `pit-${player}-${action}`, state.colors[index]));
+    button.appendChild(count(state.board[index]));
     return button;
   }
 
