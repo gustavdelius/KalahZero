@@ -339,25 +339,54 @@
     const layer = document.createElement("span");
     layer.className = "stones";
     const visible = Math.min(amount, 18);
+    const positions = packedStonePositions(visible, salt);
     for (let i = 0; i < visible; i += 1) {
       const stone = document.createElement("span");
       stone.className = "stone";
-      const { x, y } = stonePoint(i, amount, salt);
-      stone.style.left = `${x}%`;
-      stone.style.top = `${y}%`;
+      stone.style.left = `${positions[i].x}%`;
+      stone.style.top = `${positions[i].y}%`;
       stone.style.setProperty("--stone-color", STONE_COLORS[stoneColors[i] % STONE_COLORS.length]);
       layer.appendChild(stone);
     }
     return layer;
   }
 
-  function stonePoint(index, amount, salt) {
-    let hash = 0;
-    const text = `${salt}-${index}-${amount}`;
-    for (let i = 0; i < text.length; i += 1) {
-      hash = (hash * 31 + text.charCodeAt(i)) >>> 0;
+  function packedStonePositions(total, salt) {
+    // Seeded xorshift RNG — same pit + same count always gives the same layout.
+    let seed = 0;
+    for (let i = 0; i < salt.length; i += 1) {
+      seed = (Math.imul(seed, 31) + salt.charCodeAt(i)) >>> 0;
     }
-    return { x: 8 + (hash % 76), y: 8 + ((hash >>> 8) % 76) };
+    seed = seed || 1;
+    function rng() {
+      seed ^= seed << 13;
+      seed ^= seed >>> 17;
+      seed ^= seed << 5;
+      return (seed >>> 0) / 4294967296;
+    }
+
+    // Container is approx 91 × 66 px (pit after inset). Stone diameter: 14 px.
+    const W = 91, H = 66, minD = 15, pad = 13;
+    const positions = [];
+    for (let i = 0; i < total; i += 1) {
+      // Try many random candidates; keep the one with the most clearance.
+      let best = null, bestDist = -1;
+      const tries = Math.max(50, total * 15);
+      for (let t = 0; t < tries; t += 1) {
+        const x = pad + rng() * (100 - 2 * pad);
+        const y = pad + rng() * (100 - 2 * pad);
+        let d = Infinity;
+        for (const p of positions) {
+          const dx = (x - p.x) / 100 * W;
+          const dy = (y - p.y) / 100 * H;
+          d = Math.min(d, Math.sqrt(dx * dx + dy * dy));
+        }
+        if (d > bestDist) { best = { x, y }; bestDist = d; }
+        if (bestDist >= minD) break; // good enough — stop early
+      }
+      positions.push(best);
+    }
+    return positions;
   }
 
   function statusText() {
