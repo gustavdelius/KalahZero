@@ -5,7 +5,7 @@ import unittest
 
 from kalah_zero.agents import GreedyAgent, MinimaxAgent, RandomAgent
 from kalah_zero.batched_mcts import BatchedMCTS
-from kalah_zero.evaluate import arena
+from kalah_zero.evaluate import arena, random_opening
 from kalah_zero.game import GameState
 from kalah_zero.mcts import MCTS, UniformEvaluator
 
@@ -46,6 +46,24 @@ class AgentAndMCTSTests(unittest.TestCase):
         )
 
         self.assertEqual(progress, [(1, 1), (2, 2), (3, 3)])
+
+    def test_random_opening_applies_requested_number_of_moves(self) -> None:
+        state = random_opening(plies=4, rng=random.Random(0))
+
+        self.assertNotEqual(state, GameState.new_game())
+        self.assertEqual(sum(state.board), GameState.new_game().total_stones)
+
+    def test_arena_accepts_random_openings(self) -> None:
+        result = arena(
+            GreedyAgent(),
+            RandomAgent(random.Random(0)),
+            games=4,
+            seed=0,
+            opening_plies=3,
+        )
+
+        self.assertEqual(result.games, 4)
+        self.assertEqual(result.wins_0 + result.wins_1 + result.draws, 4)
 
     def test_mcts_returns_visit_policy_over_legal_actions(self) -> None:
         state = GameState.new_game()

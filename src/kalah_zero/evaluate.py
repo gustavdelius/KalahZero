@@ -21,8 +21,9 @@ def play_game(
     pits: int = 6,
     stones: int = 4,
     max_moves: int = 500,
+    initial_state: GameState | None = None,
 ) -> GameRecord:
-    state = GameState.new_game(pits=pits, stones=stones)
+    state = initial_state or GameState.new_game(pits=pits, stones=stones)
     agents = [agent_0, agent_1]
     moves = 0
     while not state.is_terminal() and moves < max_moves:
@@ -33,6 +34,20 @@ def play_game(
     score_1 = state.score_for_player(1)
     winner = 0 if score_0 > score_1 else 1 if score_1 > score_0 else None
     return GameRecord(winner=winner, final_state=state, moves=moves)
+
+
+def random_opening(
+    plies: int,
+    rng: random.Random,
+    pits: int = 6,
+    stones: int = 4,
+) -> GameState:
+    state = GameState.new_game(pits=pits, stones=stones)
+    for _ in range(max(0, plies)):
+        if state.is_terminal():
+            break
+        state = state.apply(rng.choice(state.legal_actions()))
+    return state
 
 
 @dataclass(frozen=True, slots=True)
@@ -54,20 +69,24 @@ def arena(
     pits: int = 6,
     stones: int = 4,
     seed: int = 0,
+    opening_plies: int = 0,
     on_game_complete: Callable[[int, ArenaResult], None] | None = None,
 ) -> ArenaResult:
     rng = random.Random(seed)
     wins_a = 0
     wins_b = 0
     draws = 0
+    paired_opening: GameState | None = None
     for index in range(games):
+        if opening_plies > 0 and index % 2 == 0:
+            paired_opening = random_opening(opening_plies, rng, pits=pits, stones=stones)
+        initial_state = paired_opening if opening_plies > 0 else None
         if index % 2 == 0:
-            record = play_game(agent_a, agent_b, pits=pits, stones=stones)
+            record = play_game(agent_a, agent_b, pits=pits, stones=stones, initial_state=initial_state)
             winner_is_a = record.winner == 0
             winner_is_b = record.winner == 1
         else:
-            _ = rng.random()
-            record = play_game(agent_b, agent_a, pits=pits, stones=stones)
+            record = play_game(agent_b, agent_a, pits=pits, stones=stones, initial_state=initial_state)
             winner_is_a = record.winner == 1
             winner_is_b = record.winner == 0
         if record.winner is None:

@@ -61,6 +61,12 @@ def main() -> None:
     parser.add_argument("--batched-mcts", action="store_true", help="Batch MCTS leaf evaluations.")
     parser.add_argument("--eval-batch-size", type=int, default=32)
     parser.add_argument("--games", type=int, default=20)
+    parser.add_argument(
+        "--opening-plies",
+        type=int,
+        default=0,
+        help="Play this many random legal moves before evaluation. Openings are reused with agents swapped.",
+    )
     parser.add_argument("--seed", type=int, default=0)
     args = parser.parse_args()
 
@@ -92,6 +98,7 @@ def main() -> None:
         ),
         games=args.games,
         seed=args.seed,
+        opening_plies=args.opening_plies,
         on_game_complete=show_progress,
     )
     print(file=sys.stderr)
@@ -100,6 +107,8 @@ def main() -> None:
     search_info = f"simulations={args.simulations}"
     if args.batched_mcts:
         search_info += f", batched_mcts=True, eval_batch_size={args.eval_batch_size}"
+    if args.opening_plies > 0:
+        search_info += f", opening_plies={args.opening_plies}"
     print(
         f"{label_a} vs {label_b}: "
         f"{result.wins_0}-{result.wins_1}-{result.draws} "
