@@ -34,6 +34,19 @@ class AgentAndMCTSTests(unittest.TestCase):
 
         self.assertGreaterEqual(result.wins_0, 5)
 
+    def test_arena_reports_progress_after_each_game(self) -> None:
+        progress: list[tuple[int, int]] = []
+
+        arena(
+            GreedyAgent(),
+            RandomAgent(random.Random(0)),
+            games=3,
+            seed=0,
+            on_game_complete=lambda completed, result: progress.append((completed, result.games)),
+        )
+
+        self.assertEqual(progress, [(1, 1), (2, 2), (3, 3)])
+
     def test_mcts_returns_visit_policy_over_legal_actions(self) -> None:
         state = GameState.new_game()
         mcts = MCTS(simulations=20)

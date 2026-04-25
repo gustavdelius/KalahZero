@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import random
+import sys
 
 import _path  # noqa: F401
 from kalah_zero.agents import GreedyAgent, MCTSAgent, MinimaxAgent, RandomAgent
@@ -63,6 +64,15 @@ def main() -> None:
     parser.add_argument("--seed", type=int, default=0)
     args = parser.parse_args()
 
+    def show_progress(completed: int, partial_result) -> None:
+        print(
+            f"\rcompleted {completed}/{args.games} games "
+            f"({partial_result.wins_0}-{partial_result.wins_1}-{partial_result.draws})",
+            end="",
+            file=sys.stderr,
+            flush=True,
+        )
+
     result = arena(
         build_agent(
             args.agent_a,
@@ -82,13 +92,18 @@ def main() -> None:
         ),
         games=args.games,
         seed=args.seed,
+        on_game_complete=show_progress,
     )
+    print(file=sys.stderr)
     label_a = args.checkpoint_a or args.agent_a
     label_b = args.checkpoint_b or args.agent_b
+    search_info = f"simulations={args.simulations}"
+    if args.batched_mcts:
+        search_info += f", batched_mcts=True, eval_batch_size={args.eval_batch_size}"
     print(
         f"{label_a} vs {label_b}: "
         f"{result.wins_0}-{result.wins_1}-{result.draws} "
-        f"(win rate {result.win_rate_0:.3f})"
+        f"(win rate {result.win_rate_0:.3f}, {search_info})"
     )
 
 

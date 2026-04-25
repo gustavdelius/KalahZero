@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import random
 from dataclasses import dataclass
+from typing import Callable
 
 from kalah_zero.agents import Agent
 from kalah_zero.game import GameState
@@ -53,6 +54,7 @@ def arena(
     pits: int = 6,
     stones: int = 4,
     seed: int = 0,
+    on_game_complete: Callable[[int, ArenaResult], None] | None = None,
 ) -> ArenaResult:
     rng = random.Random(seed)
     wins_a = 0
@@ -74,5 +76,6 @@ def arena(
             wins_a += 1
         elif winner_is_b:
             wins_b += 1
+        if on_game_complete is not None:
+            on_game_complete(index + 1, ArenaResult(index + 1, wins_a, wins_b, draws))
     return ArenaResult(games=games, wins_0=wins_a, wins_1=wins_b, draws=draws)
-
