@@ -2,7 +2,7 @@
   "use strict";
 
   const PITS = 6;
-  const DEFAULT_STONES = 4;
+  const DEFAULT_STONES = 6;
   const STONE_COLORS = ['#d4a017', '#c85a10', '#a82010', '#2e5e2e', '#8a7860', '#c8a050'];
   const STORE_0 = PITS;
   const STORE_1 = 2 * PITS + 1;

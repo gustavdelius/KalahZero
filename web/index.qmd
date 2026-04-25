@@ -73,9 +73,9 @@ format:
       <label>
         Starting stones
         <select id="starting-stones">
-          <option value="4" selected>4 per pit</option>
+          <option value="4">4 per pit</option>
           <option value="5">5 per pit</option>
-          <option value="6">6 per pit</option>
+          <option value="6" selected>6 per pit</option>
         </select>
       </label>
       <label>
