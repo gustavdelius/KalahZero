@@ -5,7 +5,7 @@ import unittest
 
 from kalah_zero.agents import GreedyAgent, MinimaxAgent, NoisyAgent, RandomAgent
 from kalah_zero.batched_mcts import BatchedMCTS
-from kalah_zero.evaluate import arena, random_opening
+from kalah_zero.evaluate import arena, choose_opening_plies, random_opening
 from kalah_zero.game import GameState
 from kalah_zero.mcts import MCTS, UniformEvaluator
 
@@ -60,6 +60,13 @@ class AgentAndMCTSTests(unittest.TestCase):
         self.assertNotEqual(state, GameState.new_game())
         self.assertEqual(sum(state.board), GameState.new_game().total_stones)
 
+    def test_choose_opening_plies_supports_ranges(self) -> None:
+        rng = random.Random(0)
+        samples = [choose_opening_plies(rng, opening_plies_min=0, opening_plies_max=8) for _ in range(20)]
+
+        self.assertTrue(all(0 <= sample <= 8 for sample in samples))
+        self.assertGreater(len(set(samples)), 1)
+
     def test_arena_accepts_random_openings(self) -> None:
         result = arena(
             GreedyAgent(),
@@ -67,6 +74,19 @@ class AgentAndMCTSTests(unittest.TestCase):
             games=4,
             seed=0,
             opening_plies=3,
+        )
+
+        self.assertEqual(result.games, 4)
+        self.assertEqual(result.wins_0 + result.wins_1 + result.draws, 4)
+
+    def test_arena_accepts_random_opening_ranges(self) -> None:
+        result = arena(
+            GreedyAgent(),
+            RandomAgent(random.Random(0)),
+            games=4,
+            seed=0,
+            opening_plies_min=0,
+            opening_plies_max=4,
         )
 
         self.assertEqual(result.games, 4)

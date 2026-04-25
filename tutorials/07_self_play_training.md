@@ -122,6 +122,21 @@ Use:
 python scripts/train.py --resume checkpoints/overnight.pt --games 2500 --opening-plies 4
 ```
 
+The opening length can also be sampled uniformly from a range. If
+$k_{\min}=0$ and $k_{\max}=8$, then each self-play game chooses:
+
+$$
+k \sim \operatorname{Uniform}\{0,1,\ldots,8\}.
+$$
+
+Then the trainer applies $k$ random legal opening moves before search-based
+self-play begins:
+
+```bash
+python scripts/train.py --resume checkpoints/overnight.pt --games 3000 \
+  --opening-plies-min 0 --opening-plies-max 8
+```
+
 This is especially useful when evaluation also uses random openings:
 
 ```bash

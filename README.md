@@ -68,6 +68,12 @@ few random legal moves:
 python scripts/train.py --resume checkpoints/overnight.pt --games 2500 --opening-plies 4
 ```
 
+Or sample a different opening length each game:
+
+```bash
+python scripts/train.py --resume checkpoints/overnight.pt --games 3000 --opening-plies-min 0 --opening-plies-max 8
+```
+
 Play against a baseline:
 
 ```bash

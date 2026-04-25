@@ -128,6 +128,17 @@ python scripts/evaluate.py --checkpoint-a checkpoints/overnight.pt \
   --opening-plies 4 --noise-prob 0.1
 ```
 
+Evaluation can also sample the number of random opening moves from a range:
+
+```bash
+python scripts/evaluate.py --checkpoint-a checkpoints/overnight.pt \
+  --agent-b minimax --games 200 --simulations 100 \
+  --opening-plies-min 0 --opening-plies-max 8
+```
+
+Each sampled opening is still reused with the agents swapped, so the comparison
+does not give one agent an easier opening by accident.
+
 ## Practice
 
 Run:

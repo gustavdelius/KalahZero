@@ -53,11 +53,30 @@ def build_parser() -> argparse.ArgumentParser:
         type=int,
         help="Start each self-play game after this many random legal opening moves.",
     )
+    parser.add_argument(
+        "--opening-plies-min",
+        type=int,
+        help="Minimum random opening length for self-play.",
+    )
+    parser.add_argument(
+        "--opening-plies-max",
+        type=int,
+        help="Maximum random opening length for self-play.",
+    )
     return parser
 
 
 def config_from_args(args: argparse.Namespace, saved_config: TrainConfig | None = None) -> TrainConfig:
     base = saved_config or TrainConfig()
+    opening_plies = args.opening_plies if args.opening_plies is not None else base.opening_plies
+    opening_plies_min = base.opening_plies_min
+    opening_plies_max = base.opening_plies_max
+    if args.opening_plies is not None:
+        opening_plies_min = None
+        opening_plies_max = None
+    if args.opening_plies_min is not None or args.opening_plies_max is not None:
+        opening_plies_min = args.opening_plies_min
+        opening_plies_max = args.opening_plies_max
     return TrainConfig(
         pits=base.pits,
         stones=base.stones,
@@ -84,7 +103,9 @@ def config_from_args(args: argparse.Namespace, saved_config: TrainConfig | None 
             if args.eval_batch_size is not None
             else base.eval_batch_size
         ),
-        opening_plies=args.opening_plies if args.opening_plies is not None else base.opening_plies,
+        opening_plies=opening_plies,
+        opening_plies_min=opening_plies_min,
+        opening_plies_max=opening_plies_max,
     )
 
 
@@ -180,7 +201,10 @@ def main() -> None:
             f"resumed {args.resume}: completed_games={completed_games}, "
             f"target_games={config.games_per_iteration}, buffer={len(buffer)}, "
             f"replay_capacity={buffer.capacity}, "
-            f"batched_mcts={config.use_batched_mcts}, opening_plies={config.opening_plies}"
+            f"batched_mcts={config.use_batched_mcts}, "
+            f"opening_plies={config.opening_plies}, "
+            f"opening_plies_min={config.opening_plies_min}, "
+            f"opening_plies_max={config.opening_plies_max}"
         )
     else:
         config = config_from_args(args)

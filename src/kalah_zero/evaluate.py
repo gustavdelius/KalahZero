@@ -50,6 +50,24 @@ def random_opening(
     return state
 
 
+def choose_opening_plies(
+    rng: random.Random,
+    opening_plies: int = 0,
+    opening_plies_min: int | None = None,
+    opening_plies_max: int | None = None,
+) -> int:
+    if opening_plies_min is None and opening_plies_max is None:
+        low = high = opening_plies
+    else:
+        low = 0 if opening_plies_min is None else opening_plies_min
+        high = low if opening_plies_max is None else opening_plies_max
+    if low < 0 or high < 0:
+        raise ValueError("opening plies must be non-negative")
+    if high < low:
+        raise ValueError("opening plies max must be greater than or equal to min")
+    return rng.randint(low, high)
+
+
 @dataclass(frozen=True, slots=True)
 class ArenaResult:
     games: int
@@ -70,6 +88,8 @@ def arena(
     stones: int = 4,
     seed: int = 0,
     opening_plies: int = 0,
+    opening_plies_min: int | None = None,
+    opening_plies_max: int | None = None,
     on_game_complete: Callable[[int, ArenaResult], None] | None = None,
 ) -> ArenaResult:
     rng = random.Random(seed)
@@ -78,9 +98,15 @@ def arena(
     draws = 0
     paired_opening: GameState | None = None
     for index in range(games):
-        if opening_plies > 0 and index % 2 == 0:
-            paired_opening = random_opening(opening_plies, rng, pits=pits, stones=stones)
-        initial_state = paired_opening if opening_plies > 0 else None
+        if index % 2 == 0:
+            plies = choose_opening_plies(
+                rng,
+                opening_plies=opening_plies,
+                opening_plies_min=opening_plies_min,
+                opening_plies_max=opening_plies_max,
+            )
+            paired_opening = random_opening(plies, rng, pits=pits, stones=stones) if plies > 0 else None
+        initial_state = paired_opening
         if index % 2 == 0:
             record = play_game(agent_a, agent_b, pits=pits, stones=stones, initial_state=initial_state)
             winner_is_a = record.winner == 0

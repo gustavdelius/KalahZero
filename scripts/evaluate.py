@@ -77,6 +77,16 @@ def main() -> None:
         help="Play this many random legal moves before evaluation. Openings are reused with agents swapped.",
     )
     parser.add_argument(
+        "--opening-plies-min",
+        type=int,
+        help="Minimum random opening length. Openings are reused with agents swapped.",
+    )
+    parser.add_argument(
+        "--opening-plies-max",
+        type=int,
+        help="Maximum random opening length. Openings are reused with agents swapped.",
+    )
+    parser.add_argument(
         "--noise-prob",
         type=float,
         default=0.1,
@@ -116,6 +126,8 @@ def main() -> None:
         games=args.games,
         seed=args.seed,
         opening_plies=args.opening_plies,
+        opening_plies_min=args.opening_plies_min,
+        opening_plies_max=args.opening_plies_max,
         on_game_complete=show_progress,
     )
     print(file=sys.stderr)
@@ -124,8 +136,13 @@ def main() -> None:
     search_info = f"simulations={args.simulations}"
     if args.batched_mcts:
         search_info += f", batched_mcts=True, eval_batch_size={args.eval_batch_size}"
-    if args.opening_plies > 0:
+    using_opening_range = args.opening_plies_min is not None or args.opening_plies_max is not None
+    if args.opening_plies > 0 and not using_opening_range:
         search_info += f", opening_plies={args.opening_plies}"
+    if using_opening_range:
+        opening_min = 0 if args.opening_plies_min is None else args.opening_plies_min
+        opening_max = opening_min if args.opening_plies_max is None else args.opening_plies_max
+        search_info += f", opening_plies={opening_min}..{opening_max}"
     if args.agent_a.startswith("noisy-") or args.agent_b.startswith("noisy-"):
         search_info += f", noise_prob={args.noise_prob}"
     print(
