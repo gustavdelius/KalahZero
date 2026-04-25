@@ -25,7 +25,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--checkpoint-every",
         type=int,
-        default=10,
+        default=100,
         help="Save every N completed games. Use 0 to save only at the end or on interrupt.",
     )
     parser.add_argument("--seed", type=int, help="Random seed for a fresh run.")
