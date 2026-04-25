@@ -220,7 +220,7 @@ select:focus-visible,
   border-color: #253038;
 }
 
-#agent-url-control.hidden { display: none; }
+.hidden { display: none; }
 
 .range-labels {
   display: flex;

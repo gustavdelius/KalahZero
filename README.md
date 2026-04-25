@@ -108,18 +108,15 @@ Open the graphical browser board:
 quarto preview
 ```
 
-Then open the **Play** page in the navbar.
+Then open the **Play** page in the navbar. The **Trained agent** opponent runs
+entirely in the browser using the exported `web/residual_depth.json` weights and
+a Web Worker, so it does not need a local server.
 
-To play the browser board against a trained checkpoint, start the local agent
-server in another terminal:
+To refresh the browser weights from a checkpoint:
 
 ```bash
-python scripts/agent_server.py --checkpoint checkpoints/overnight.pt \
-  --simulations 250 --batched-mcts --eval-batch-size 8 --fast-game
+python scripts/export_browser_agent.py checkpoints/residual_depth.pt web/residual_depth.json
 ```
-
-Then choose **Trained agent** from the Play page opponent menu. The default
-browser endpoint is `http://127.0.0.1:8765/move`.
 
 Read the tutorials in order from `tutorials/01_kalah_rules.md`.
 

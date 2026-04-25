@@ -9,6 +9,15 @@
   const HUMAN_DELAY_MS = 220;
   // Indexed by slider value 1–5 (slow → fast).
   const SPEED_DELAYS = [800, 500, 300, 150, 80];
+  const SCRIPT_BASE_URL = (() => {
+    if (typeof document !== "undefined" && document.currentScript) {
+      return new URL(".", document.currentScript.src);
+    }
+    if (typeof window !== "undefined" && window.location) {
+      return new URL(".", window.location.href);
+    }
+    return new URL("file:///");
+  })();
 
   const elements = {};
   let state = newGame();
@@ -18,6 +27,9 @@
   let busy = false;
   let animating = false;
   let agentError = "";
+  let agentWorker = null;
+  let agentRequestId = 0;
+  const agentRequests = new Map();
 
   function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -277,8 +289,8 @@
     elements.history = document.querySelector("#history");
     elements.positionSummary = document.querySelector("#position-summary");
     elements.opponent = document.querySelector("#opponent");
-    elements.agentUrlControl = document.querySelector("#agent-url-control");
-    elements.agentUrl = document.querySelector("#agent-url");
+    elements.agentSimulationsControl = document.querySelector("#agent-simulations-control");
+    elements.agentSimulations = document.querySelector("#agent-simulations");
     elements.humanPlayer = document.querySelector("#human-player");
     elements.newGame = document.querySelector("#new-game");
     elements.animSpeed = document.querySelector("#anim-speed");
@@ -286,7 +298,7 @@
     elements.opponent.addEventListener("change", () => {
       opponent = elements.opponent.value;
       agentError = "";
-      updateAgentUrlControl();
+      updateAgentControls();
       maybeAgentMove();
     });
     elements.humanPlayer.addEventListener("change", () => {
@@ -296,7 +308,7 @@
     elements.newGame.addEventListener("click", resetGame);
 
     render();
-    updateAgentUrlControl();
+    updateAgentControls();
     maybeAgentMove();
   }
 
@@ -348,25 +360,55 @@
   }
 
   async function requestTrainedAgentMove(gameState) {
-    const endpoint = elements.agentUrl.value.trim();
-    if (!endpoint) throw new Error("Agent server URL is empty");
-    const response = await fetch(endpoint, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
+    const worker = getAgentWorker();
+    const simulations = elements.agentSimulations ? Number(elements.agentSimulations.value) : 120;
+    const payload = await new Promise((resolve, reject) => {
+      const id = ++agentRequestId;
+      const timeout = window.setTimeout(() => {
+        agentRequests.delete(id);
+        reject(new Error("Agent took too long to move"));
+      }, 20000);
+      agentRequests.set(id, { resolve, reject, timeout });
+      worker.postMessage({
+        type: "move",
+        id,
         board: gameState.board,
-        current_player: gameState.currentPlayer,
-        pits: PITS,
-      }),
+        currentPlayer: gameState.currentPlayer,
+        simulations,
+      });
     });
-    const payload = await response.json().catch(() => ({}));
-    if (!response.ok) {
-      throw new Error(payload.error || `Agent server returned ${response.status}`);
-    }
     if (!legalActions(gameState).includes(payload.action)) {
-      throw new Error(`Agent server returned illegal action ${payload.action}`);
+      throw new Error(`Agent returned illegal action ${payload.action}`);
     }
     return payload.action;
+  }
+
+  function getAgentWorker() {
+    if (typeof Worker === "undefined") {
+      throw new Error("This browser does not support Web Workers");
+    }
+    if (agentWorker) return agentWorker;
+    agentWorker = new Worker(new URL("agent_worker.js", SCRIPT_BASE_URL));
+    agentWorker.addEventListener("message", (event) => {
+      const payload = event.data || {};
+      const pending = agentRequests.get(payload.id);
+      if (!pending) return;
+      window.clearTimeout(pending.timeout);
+      agentRequests.delete(payload.id);
+      if (payload.ok) {
+        pending.resolve(payload);
+      } else {
+        pending.reject(new Error(payload.error || "Agent failed to move"));
+      }
+    });
+    agentWorker.addEventListener("error", (error) => {
+      for (const [id, pending] of agentRequests) {
+        window.clearTimeout(pending.timeout);
+        pending.reject(new Error(error.message || "Agent worker failed"));
+        agentRequests.delete(id);
+      }
+    });
+    return agentWorker;
   }
 
   async function playAction(action) {
@@ -411,8 +453,8 @@
     renderPitRows(displayState);
   }
 
-  function updateAgentUrlControl() {
-    elements.agentUrlControl.classList.toggle("hidden", opponent !== "trained");
+  function updateAgentControls() {
+    elements.agentSimulationsControl.classList.toggle("hidden", opponent !== "trained");
   }
 
   function renderStores(boardState) {
@@ -535,7 +577,7 @@
       if (score(0) === score(1)) return `Draw, ${score(0)}-${score(1)}`;
       return `${score(0) > score(1) ? "South" : "North"} wins, ${score(0)}-${score(1)}`;
     }
-    if (agentError) return `Agent server error: ${agentError}`;
+    if (agentError) return `Agent error: ${agentError}`;
     if (animating) return `${playerName(state.currentPlayer)} moving`;
     if (busy) return `${playerName(state.currentPlayer)} thinking`;
     return `${playerName(state.currentPlayer)} to move`;

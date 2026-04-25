@@ -3,6 +3,8 @@ project:
   output-dir: _site
   resources:
     - "web/app.js"
+    - "web/agent_worker.js"
+    - "web/residual_depth.json"
     - "web/styles.css"
 
 website:

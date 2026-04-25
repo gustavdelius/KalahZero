@@ -58,9 +58,10 @@ format:
           <option value="trained">Trained agent</option>
         </select>
       </label>
-      <label id="agent-url-control">
-        Agent server
-        <input id="agent-url" type="url" value="http://127.0.0.1:8765/move">
+      <label id="agent-simulations-control" class="hidden">
+        Search
+        <input id="agent-simulations" type="range" min="40" max="240" step="20" value="120">
+        <span class="range-labels"><span>Fast</span><span>Deep</span></span>
       </label>
       <label>
         You play as
