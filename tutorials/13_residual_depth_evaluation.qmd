@@ -1,0 +1,269 @@
+---
+title: "13. Residual Depth Evaluation"
+---
+
+## Goal
+
+This note evaluates the current `checkpoints/residual_depth.pt` checkpoint
+against several opponents. The purpose is not to declare a final strength
+rating. It is to learn what changed after moving from the plain MLP to a
+depth-only residual MLP.
+
+The checkpoint metadata is:
+
+| field | value |
+|---|---:|
+| completed self-play games | 3000 |
+| model type | residual |
+| hidden size | 128 |
+| residual blocks | 3 |
+| training simulations | 250 |
+| opening plies | 0..8 |
+| replay capacity | 50000 |
+
+The architecture is the depth-only experiment:
+
+$$
+\text{residual MLP, hidden size } 128, \text{ blocks } 3.
+$$
+
+That means this run tests depth while keeping the hidden width equal to the
+original MLP.
+
+## Evaluation Setup
+
+All evaluations used the same random-opening distribution:
+
+$$
+k \sim \operatorname{Uniform}\{0,1,\ldots,8\}.
+$$
+
+For each paired opening, the evaluator reused the same opening position with
+the players swapped. This reduces the chance that one agent gets easier
+openings by accident.
+
+The neural agent used:
+
+- batched Monte Carlo Tree Search,
+- evaluation batch size 8,
+- the optional C++ game engine,
+- deterministic action selection from search visit counts.
+
+The common command shape was:
+
+```bash
+python scripts/evaluate.py \
+  --checkpoint-a checkpoints/residual_depth.pt \
+  --agent-b minimax \
+  --games 200 \
+  --simulations 250 \
+  --batched-mcts \
+  --eval-batch-size 8 \
+  --fast-game \
+  --opening-plies-min 0 \
+  --opening-plies-max 8
+```
+
+The script reports a win rate:
+
+$$
+\widehat{w} = \frac{\text{wins}}{\text{games}}.
+$$
+
+For comparison, the table below also includes score rate, which gives half
+credit for draws:
+
+$$
+\widehat{s} =
+\frac{\text{wins} + \frac{1}{2}\text{draws}}{\text{games}}.
+$$
+
+## Results
+
+| opponent | games | simulations | result | win rate | score rate |
+|---|---:|---:|---:|---:|---:|
+| random | 200 | 100 | 199-1-0 | 0.995 | 0.995 |
+| greedy | 200 | 100 | 150-30-20 | 0.750 | 0.800 |
+| MCTS with uniform evaluator | 100 | 100 | 91-5-4 | 0.910 | 0.930 |
+| minimax | 200 | 100 | 42-149-9 | 0.210 | 0.233 |
+| minimax | 200 | 250 | 62-131-7 | 0.310 | 0.328 |
+| minimax | 200 | 400 | 74-107-19 | 0.370 | 0.417 |
+| noisy minimax, $\epsilon=0.1$ | 200 | 100 | 64-127-9 | 0.320 | 0.343 |
+
+The result notation is:
+
+$$
+\text{agent wins} - \text{opponent wins} - \text{draws}.
+$$
+
+## Commands
+
+Random:
+
+```bash
+python scripts/evaluate.py \
+  --checkpoint-a checkpoints/residual_depth.pt \
+  --agent-b random \
+  --games 200 \
+  --simulations 100 \
+  --batched-mcts \
+  --eval-batch-size 8 \
+  --fast-game \
+  --opening-plies-min 0 \
+  --opening-plies-max 8
+```
+
+Greedy:
+
+```bash
+python scripts/evaluate.py \
+  --checkpoint-a checkpoints/residual_depth.pt \
+  --agent-b greedy \
+  --games 200 \
+  --simulations 100 \
+  --batched-mcts \
+  --eval-batch-size 8 \
+  --fast-game \
+  --opening-plies-min 0 \
+  --opening-plies-max 8
+```
+
+Uniform MCTS:
+
+```bash
+python scripts/evaluate.py \
+  --checkpoint-a checkpoints/residual_depth.pt \
+  --agent-b mcts \
+  --games 100 \
+  --simulations 100 \
+  --batched-mcts \
+  --eval-batch-size 8 \
+  --fast-game \
+  --opening-plies-min 0 \
+  --opening-plies-max 8
+```
+
+Deterministic minimax:
+
+```bash
+python scripts/evaluate.py \
+  --checkpoint-a checkpoints/residual_depth.pt \
+  --agent-b minimax \
+  --games 200 \
+  --simulations 100 \
+  --batched-mcts \
+  --eval-batch-size 8 \
+  --fast-game \
+  --opening-plies-min 0 \
+  --opening-plies-max 8
+
+python scripts/evaluate.py \
+  --checkpoint-a checkpoints/residual_depth.pt \
+  --agent-b minimax \
+  --games 200 \
+  --simulations 250 \
+  --batched-mcts \
+  --eval-batch-size 8 \
+  --fast-game \
+  --opening-plies-min 0 \
+  --opening-plies-max 8
+
+python scripts/evaluate.py \
+  --checkpoint-a checkpoints/residual_depth.pt \
+  --agent-b minimax \
+  --games 200 \
+  --simulations 400 \
+  --batched-mcts \
+  --eval-batch-size 8 \
+  --fast-game \
+  --opening-plies-min 0 \
+  --opening-plies-max 8
+```
+
+Noisy minimax:
+
+```bash
+python scripts/evaluate.py \
+  --checkpoint-a checkpoints/residual_depth.pt \
+  --agent-b noisy-minimax \
+  --games 200 \
+  --simulations 100 \
+  --batched-mcts \
+  --eval-batch-size 8 \
+  --fast-game \
+  --opening-plies-min 0 \
+  --opening-plies-max 8 \
+  --noise-prob 0.1
+```
+
+## Interpretation
+
+The residual-depth checkpoint easily beats random play, greedy play, and
+uniform-evaluator MCTS on this randomized-opening distribution. That is a good
+basic sanity check: the network and search are learning something stronger than
+the simple baselines.
+
+The hard result is deterministic minimax. The residual checkpoint improves as
+the search budget increases:
+
+$$
+0.210 \rightarrow 0.310 \rightarrow 0.370
+$$
+
+for 100, 250, and 400 simulations. This means extra search still helps, so the
+network is not completely misleading MCTS. But even at 400 simulations the agent
+is below parity against minimax.
+
+The noisy-minimax result is also informative. With a $10\%$ random-move error
+rate, the agent scores better than it does against deterministic minimax at the
+same 100-simulation budget:
+
+$$
+0.210 \rightarrow 0.320.
+$$
+
+That suggests the agent can exploit some mistakes, but deterministic minimax is
+still exposing tactical weaknesses.
+
+## Comparison With The Plain MLP
+
+The current plain MLP checkpoint was previously evaluated on the same
+`0..8` opening distribution after 5800 games:
+
+| checkpoint | simulations | result vs minimax | win rate |
+|---|---:|---:|---:|
+| plain MLP | 100 | 53-142-5 | 0.265 |
+| plain MLP | 250 | 83-113-4 | 0.415 |
+| plain MLP | 400 | 80-113-7 | 0.400 |
+| residual depth | 100 | 42-149-9 | 0.210 |
+| residual depth | 250 | 62-131-7 | 0.310 |
+| residual depth | 400 | 74-107-19 | 0.370 |
+
+This is not a perfectly controlled comparison because the plain MLP had 5800
+self-play games, while `residual_depth.pt` has 3000. Still, the residual-depth
+checkpoint has not yet shown a clear advantage over the plain MLP.
+
+The next fair experiment is to continue the residual-depth checkpoint to a
+similar training budget before judging the architecture:
+
+```bash
+python scripts/train.py \
+  --resume checkpoints/residual_depth.pt \
+  --games 5800 \
+  --simulations 250 \
+  --epochs 1 \
+  --batched-mcts \
+  --eval-batch-size 8 \
+  --fast-game \
+  --opening-plies-min 0 \
+  --opening-plies-max 8 \
+  --replay-capacity 50000
+```
+
+Then rerun the same minimax evaluation table. If the residual model still lags
+after equal training, depth alone is probably not the right upgrade. The next
+controlled experiment would be width-only:
+
+$$
+\text{plain MLP, hidden size } 256.
+$$

@@ -63,6 +63,8 @@ website:
               text: "11. Scaling Strength"
             - href: tutorials/12_codebase_walkthrough.md
               text: "12. Codebase Walkthrough"
+            - href: tutorials/13_residual_depth_evaluation.qmd
+              text: "13. Residual Depth Evaluation"
 
 format:
   html:

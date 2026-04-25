@@ -36,3 +36,4 @@ $$
 10. [Instrumentation and Debugging](10_instrumentation.md)
 11. [Scaling Strength](11_scaling_strength.md)
 12. [Reading the Whole Codebase](12_codebase_walkthrough.md)
+13. [Residual Depth Evaluation](13_residual_depth_evaluation.qmd)
