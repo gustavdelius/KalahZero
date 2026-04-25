@@ -30,6 +30,7 @@
   let agentError = "";
   let agentWorker = null;
   let agentRequestId = 0;
+  let timelineVersion = 0;
   const agentRequests = new Map();
 
   function sleep(ms) {
@@ -49,6 +50,16 @@
     const board = [...Array(PITS).fill(stones), 0, ...Array(PITS).fill(stones), 0];
     const colors = board.map(count => Array.from({ length: count }, randomColorIdx));
     return { board, colors, currentPlayer: 0 };
+  }
+
+  function cloneState(gameState) {
+    const cloned = {
+      board: [...gameState.board],
+      colors: gameState.colors.map(arr => [...arr]),
+      currentPlayer: gameState.currentPlayer,
+    };
+    if (gameState.lastMove) cloned.lastMove = { ...gameState.lastMove };
+    return cloned;
   }
 
   function storeIndex(player) {
@@ -288,7 +299,6 @@
     elements.scoreSouth = document.querySelector("#score-south");
     elements.status = document.querySelector("#status");
     elements.history = document.querySelector("#history");
-    elements.positionSummary = document.querySelector("#position-summary");
     elements.opponent = document.querySelector("#opponent");
     elements.agentSimulationsControl = document.querySelector("#agent-simulations-control");
     elements.agentSimulations = document.querySelector("#agent-simulations");
@@ -319,6 +329,7 @@
   }
 
   function resetGame() {
+    timelineVersion += 1;
     state = newGame(startingStones);
     history = [];
     busy = false;
@@ -330,9 +341,11 @@
 
   async function onPitClick(action) {
     if (busy || !isHumanTurn() || !legalActions(state).includes(action)) return;
+    const playVersion = timelineVersion;
     busy = true;
     render();
-    await playAction(action);
+    const moved = await playAction(action, playVersion);
+    if (!moved || playVersion !== timelineVersion) return;
     busy = false;
     render();
     maybeAgentMove();
@@ -340,17 +353,23 @@
 
   function maybeAgentMove() {
     if (busy || isTerminal(state) || isHumanTurn()) return;
+    const playVersion = timelineVersion;
+    const agentState = cloneState(state);
     busy = true;
     render();
     window.setTimeout(async () => {
+      if (playVersion !== timelineVersion) return;
       try {
-        const action = await chooseOpponentAction(state);
+        const action = await chooseOpponentAction(agentState);
+        if (playVersion !== timelineVersion) return;
         agentError = "";
-        await playAction(action);
+        const moved = await playAction(action, playVersion);
+        if (!moved || playVersion !== timelineVersion) return;
         busy = false;
         render();
         maybeAgentMove();
       } catch (error) {
+        if (playVersion !== timelineVersion) return;
         agentError = error.message || String(error);
         busy = false;
         render();
@@ -417,21 +436,24 @@
     return agentWorker;
   }
 
-  async function playAction(action) {
+  async function playAction(action, playVersion = timelineVersion) {
     animating = true;
     const { steps: sowingSteps, mover, landingIndex } = computeSowingSteps(state, action);
     for (let i = 0; i < sowingSteps.length; i++) {
       if (i > 0) await sleep(stoneDropDelay());
+      if (playVersion !== timelineVersion) return false;
       renderBoard(sowingSteps[i]);
     }
 
     const postSteps = computePostSowSteps(sowingSteps[sowingSteps.length - 1], mover, landingIndex);
     for (const step of postSteps) {
       await sleep(stoneDropDelay() * 2);
+      if (playVersion !== timelineVersion) return false;
       renderBoard(step);
     }
 
     await sleep(stoneDropDelay());
+    if (playVersion !== timelineVersion) return false;
     animating = false;
 
     const before = state.currentPlayer;
@@ -439,15 +461,19 @@
     const tags = [];
     if (state.lastMove.captured) tags.push("capture");
     if (state.lastMove.extraTurn) tags.push("again");
-    history.unshift(`${playerName(before)} ${action + 1}${tags.length ? ` (${tags.join(", ")})` : ""}`);
+    history.unshift({
+      label: `${playerName(before)} ${action + 1}${tags.length ? ` (${tags.join(", ")})` : ""}`,
+      player: before,
+      state: cloneState(state),
+    });
     history = history.slice(0, 18);
+    return true;
   }
 
   function render() {
     elements.scoreNorth.textContent = String(score(1));
     elements.scoreSouth.textContent = String(score(0));
     elements.status.textContent = statusText();
-    elements.positionSummary.textContent = summaryText();
     renderStores(state);
     renderPitRows(state);
     renderHistory();
@@ -589,19 +615,31 @@
     return `${playerName(state.currentPlayer)} to move`;
   }
 
-  function summaryText() {
-    const south = state.board.slice(0, PITS).join(" ");
-    const north = state.board.slice(PITS + 1, STORE_1).join(" ");
-    return `${startingStones} stones | South [${south}] | North [${north}]`;
-  }
-
   function renderHistory() {
     elements.history.innerHTML = "";
-    for (const item of history) {
+    history.forEach((item, index) => {
       const li = document.createElement("li");
-      li.textContent = item;
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = `history-button history-${item.player === 0 ? "south" : "north"}`;
+      button.disabled = animating;
+      button.textContent = item.label;
+      button.setAttribute("aria-label", `Rewind to ${item.label}`);
+      button.addEventListener("click", () => rewindToHistory(index));
+      li.appendChild(button);
       elements.history.appendChild(li);
-    }
+    });
+  }
+
+  function rewindToHistory(index) {
+    if (animating || !history[index]) return;
+    timelineVersion += 1;
+    state = cloneState(history[index].state);
+    history = history.slice(index);
+    busy = false;
+    agentError = "";
+    render();
+    maybeAgentMove();
   }
 
   if (typeof window !== "undefined") {

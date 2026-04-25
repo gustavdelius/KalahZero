@@ -266,10 +266,9 @@ select:focus-visible,
   color: var(--muted);
 }
 
-.position-text {
+.history-help {
   font-size: 0.82rem;
   color: var(--muted);
-  font-family: ui-monospace, "Cascadia Code", Menlo, monospace;
   padding-bottom: 10px;
   border-bottom: 1px solid var(--line);
   margin-bottom: 4px;
@@ -288,12 +287,53 @@ select:focus-visible,
 }
 
 .history li {
+  display: flex;
+}
+
+.history-button {
   padding: 4px 9px;
+  min-height: 0;
   border: 1px solid var(--line);
   border-radius: 6px;
   color: var(--muted);
   font-size: 0.80rem;
+  font-weight: 600;
   background: var(--surface);
+  line-height: 1.2;
+  cursor: pointer;
+}
+
+.history-south {
+  border-color: color-mix(in srgb, var(--south) 28%, var(--line));
+  background: color-mix(in srgb, var(--south) 12%, var(--surface));
+  color: color-mix(in srgb, var(--south) 68%, var(--ink));
+}
+
+.history-north {
+  border-color: color-mix(in srgb, var(--north) 28%, var(--line));
+  background: color-mix(in srgb, var(--north) 12%, var(--surface));
+  color: color-mix(in srgb, var(--north) 68%, var(--ink));
+}
+
+.history-south:hover {
+  border-color: color-mix(in srgb, var(--south) 45%, var(--line));
+  background: color-mix(in srgb, var(--south) 18%, var(--surface));
+  color: color-mix(in srgb, var(--south) 82%, var(--ink));
+}
+
+.history-north:hover {
+  border-color: color-mix(in srgb, var(--north) 45%, var(--line));
+  background: color-mix(in srgb, var(--north) 18%, var(--surface));
+  color: color-mix(in srgb, var(--north) 82%, var(--ink));
+}
+
+.history-button:focus-visible {
+  border-color: #a8bcc4;
+}
+
+.history-button:disabled {
+  cursor: default;
+  opacity: 0.65;
 }
 
 /* ── Board ── */

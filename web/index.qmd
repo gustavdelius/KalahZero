@@ -49,6 +49,12 @@ format:
       </div>
     </div>
 
+    <div class="history-panel">
+      <p class="panel-label">Move history</p>
+      <p class="history-help">Click a move to rewind to that position.</p>
+      <ol id="history" class="history"></ol>
+    </div>
+
     <div class="controls-panel">
       <label>
         Opponent
@@ -84,13 +90,6 @@ format:
         <span class="range-labels"><span>Slow</span><span>Fast</span></span>
       </label>
       <button id="new-game" type="button">New Game</button>
-    </div>
-
-    <div class="history-panel">
-      <p class="panel-label">Position</p>
-      <p id="position-summary" class="position-text">Opening position</p>
-      <p class="panel-label">Move history</p>
-      <ol id="history" class="history"></ol>
     </div>
 
   </div>
