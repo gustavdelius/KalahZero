@@ -103,6 +103,106 @@ class KalahNet(nn.Module):
         return self.policy_head(features), self.value_head(features).squeeze(-1)
 ```
 
+## Residual MLPs
+
+The current network is an MLP, short for multilayer perceptron. In this repo
+that means a feed-forward network built from linear layers and nonlinearities:
+
+$$
+x
+\rightarrow h_1
+\rightarrow h_2
+\rightarrow (p,v).
+$$
+
+Making the MLP wider gives it more capacity. Making it deeper can also help, but
+plain deep networks can become harder to optimize. Each layer must learn not
+only useful new features, but also how to preserve information that should pass
+through unchanged.
+
+A residual block gives the network an easier option: learn a correction to the
+current representation. If the input to a block is $h$, the block computes:
+
+$$
+\operatorname{Block}(h)
+=
+h + F_\phi(h),
+$$
+
+where $F_\phi$ is a small neural network, often two linear layers with a ReLU
+between them:
+
+$$
+F_\phi(h)
+=
+W_2 \operatorname{ReLU}(W_1 h + b_1) + b_2.
+$$
+
+So the whole update is:
+
+$$
+h_{k+1}
+=
+h_k + W_2 \operatorname{ReLU}(W_1 h_k + b_1) + b_2.
+$$
+
+The important idea is the skip connection $h_k \rightarrow h_{k+1}$. If a block
+is not useful yet, it can learn $F_\phi(h) \approx 0$, so the block is close to
+the identity function:
+
+$$
+h_{k+1} \approx h_k.
+$$
+
+That makes it safer to stack several blocks. The network can keep useful
+features and add tactical corrections for patterns such as captures, extra
+turns, and endgame sweeps.
+
+A residual MLP version of the trunk would look like this:
+
+```python
+class ResidualBlock(nn.Module):
+    def __init__(self, hidden_size: int) -> None:
+        super().__init__()
+        self.layers = nn.Sequential(
+            nn.Linear(hidden_size, hidden_size),
+            nn.ReLU(),
+            nn.Linear(hidden_size, hidden_size),
+        )
+        self.activation = nn.ReLU()
+
+    def forward(self, h):
+        return self.activation(h + self.layers(h))
+
+
+class ResidualKalahNet(nn.Module):
+    def __init__(self, pits: int = 6, hidden_size: int = 256, blocks: int = 3) -> None:
+        super().__init__()
+        self.pits = pits
+        self.input_layer = nn.Sequential(
+            nn.Linear(input_size(pits), hidden_size),
+            nn.ReLU(),
+        )
+        self.blocks = nn.Sequential(
+            *[ResidualBlock(hidden_size) for _ in range(blocks)]
+        )
+        self.policy_head = nn.Linear(hidden_size, pits)
+        self.value_head = nn.Sequential(nn.Linear(hidden_size, 1), nn.Tanh())
+
+    def forward(self, x):
+        features = self.blocks(self.input_layer(x))
+        return self.policy_head(features), self.value_head(features).squeeze(-1)
+```
+
+This is still an MLP. There is no attention mechanism and no convolution. The
+difference is that each hidden representation can flow around a block while the
+block learns an additive refinement.
+
+For Kalah, this is a natural next architecture before attention. The board is
+small, so the main need is not long-range perception over a large grid. The main
+need is a little more capacity for tactical interactions among pits, stores,
+captures, and extra turns.
+
 ## Illegal Move Masking
 
 The network can assign a large logit to an empty pit. That is not a bug by

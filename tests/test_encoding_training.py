@@ -72,7 +72,7 @@ class OptionalTorchTests(unittest.TestCase):
         try:
             import torch  # noqa: F401
             from kalah_zero.encoding import encode_state
-            from kalah_zero.network import KalahNet, NeuralEvaluator
+            from kalah_zero.network import KalahNet, NeuralEvaluator, create_model
         except ModuleNotFoundError:
             self.skipTest("PyTorch is not installed")
 
@@ -82,9 +82,18 @@ class OptionalTorchTests(unittest.TestCase):
         evaluator = NeuralEvaluator(model)
         policy, scalar = evaluator.evaluate(state)
         batch_results = evaluator.evaluate_batch([state, state.apply(2)])
+        residual_model = create_model(
+            model_type="residual",
+            pits=state.pits,
+            hidden_size=128,
+            residual_blocks=2,
+        )
+        residual_logits, residual_value = residual_model(encode_state(state).unsqueeze(0))
 
         self.assertEqual(tuple(logits.shape), (1, state.pits))
         self.assertEqual(tuple(value.shape), (1,))
+        self.assertEqual(tuple(residual_logits.shape), (1, state.pits))
+        self.assertEqual(tuple(residual_value.shape), (1,))
         self.assertEqual(len(policy), state.pits)
         self.assertTrue(-1.0 <= scalar <= 1.0)
         self.assertEqual(len(batch_results), 2)
@@ -99,7 +108,13 @@ class OptionalTorchTests(unittest.TestCase):
             from kalah_zero.network import KalahNet
 
             sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
-            from scripts.train import build_parser, config_from_args, load_training_checkpoint, save_training_checkpoint
+            from scripts.train import (
+                architecture_changed,
+                build_parser,
+                config_from_args,
+                load_training_checkpoint,
+                save_training_checkpoint,
+            )
         except ModuleNotFoundError:
             self.skipTest("PyTorch is not installed")
 
@@ -154,6 +169,21 @@ class OptionalTorchTests(unittest.TestCase):
         fast_config = config_from_args(fast_args, loaded_config)
 
         self.assertTrue(fast_config.use_fast_game)
+
+        residual_args = parser.parse_args([
+            "--model-type",
+            "residual",
+            "--hidden-size",
+            "128",
+            "--residual-blocks",
+            "3",
+        ])
+        residual_config = config_from_args(residual_args)
+
+        self.assertEqual(residual_config.model_type, "residual")
+        self.assertEqual(residual_config.hidden_size, 128)
+        self.assertEqual(residual_config.residual_blocks, 3)
+        self.assertTrue(architecture_changed(loaded_model, residual_config))
 
 
 if __name__ == "__main__":

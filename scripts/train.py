@@ -7,7 +7,7 @@ from dataclasses import asdict
 from pathlib import Path
 
 import _path  # noqa: F401
-from kalah_zero.network import KalahNet, NeuralEvaluator
+from kalah_zero.network import NeuralEvaluator, create_model
 from kalah_zero.train import ReplayBuffer, TrainConfig, self_play_game, train_step
 
 
@@ -21,6 +21,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--epochs", type=int, help="Training epochs after each self-play game.")
     parser.add_argument("--batch-size", type=int, help="Replay samples per training batch.")
     parser.add_argument("--replay-capacity", type=int, help="Maximum number of self-play samples to keep.")
+    parser.add_argument("--model-type", choices=["mlp", "residual"], help="Neural network architecture.")
+    parser.add_argument("--hidden-size", type=int, help="Hidden layer width.")
+    parser.add_argument("--residual-blocks", type=int, help="Residual blocks for --model-type residual.")
     parser.add_argument("--output", help=f"Checkpoint path. Defaults to {DEFAULT_OUTPUT!r}.")
     parser.add_argument("--resume", help="Resume from an existing training checkpoint.")
     parser.add_argument(
@@ -124,6 +127,21 @@ def config_from_args(args: argparse.Namespace, saved_config: TrainConfig | None 
             if args.use_fast_game is not None
             else base.use_fast_game
         ),
+        model_type=args.model_type if args.model_type is not None else base.model_type,
+        hidden_size=args.hidden_size if args.hidden_size is not None else base.hidden_size,
+        residual_blocks=(
+            args.residual_blocks
+            if args.residual_blocks is not None
+            else base.residual_blocks
+        ),
+    )
+
+
+def architecture_changed(model, config: TrainConfig) -> bool:
+    return (
+        getattr(model, "model_type", "mlp") != config.model_type
+        or getattr(model, "hidden_size", 128) != config.hidden_size
+        or getattr(model, "residual_blocks", 0) != (0 if config.model_type == "mlp" else config.residual_blocks)
     )
 
 
@@ -147,7 +165,7 @@ def checkpoint_path(args: argparse.Namespace) -> Path:
 
 def save_training_checkpoint(
     path: Path,
-    model: KalahNet,
+    model,
     optimizer,
     buffer: ReplayBuffer,
     rng: random.Random,
@@ -163,6 +181,9 @@ def save_training_checkpoint(
         "model_state": model.state_dict(),
         "optimizer_state": optimizer.state_dict(),
         "pits": model.pits,
+        "model_type": getattr(model, "model_type", config.model_type),
+        "hidden_size": getattr(model, "hidden_size", config.hidden_size),
+        "residual_blocks": getattr(model, "residual_blocks", 0),
         "config": asdict(config),
         "completed_games": completed_games,
         "replay_capacity": buffer.capacity,
@@ -214,11 +235,18 @@ def main() -> None:
     if args.resume:
         model, optimizer, buffer, rng, saved_config, completed_games = load_training_checkpoint(Path(args.resume))
         config = config_from_args(args, saved_config)
+        if architecture_changed(model, config):
+            raise ValueError(
+                "cannot change model architecture while resuming a checkpoint; "
+                "start a fresh run with --output instead"
+            )
         buffer.capacity = config.replay_capacity
         print(
             f"resumed {args.resume}: completed_games={completed_games}, "
             f"target_games={config.games_per_iteration}, buffer={len(buffer)}, "
             f"replay_capacity={buffer.capacity}, "
+            f"model_type={config.model_type}, hidden_size={config.hidden_size}, "
+            f"residual_blocks={config.residual_blocks}, "
             f"batched_mcts={config.use_batched_mcts}, "
             f"fast_game={config.use_fast_game}, "
             f"opening_plies={config.opening_plies}, "
@@ -230,7 +258,12 @@ def main() -> None:
         random.seed(config.seed)
         torch.manual_seed(config.seed)
         rng = random.Random(config.seed)
-        model = KalahNet(pits=config.pits)
+        model = create_model(
+            model_type=config.model_type,
+            pits=config.pits,
+            hidden_size=config.hidden_size,
+            residual_blocks=config.residual_blocks,
+        )
         optimizer = torch.optim.AdamW(
             model.parameters(),
             lr=config.learning_rate,

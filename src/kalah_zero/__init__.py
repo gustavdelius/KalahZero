@@ -4,15 +4,18 @@ from kalah_zero.agents import Agent, GreedyAgent, MinimaxAgent, NoisyAgent, Rand
 from kalah_zero.batched_mcts import BatchedMCTS
 from kalah_zero.game import GameState
 from kalah_zero.mcts import MCTS, SearchResult
+from kalah_zero.network import KalahNet, ResidualKalahNet
 
 __all__ = [
     "Agent",
     "BatchedMCTS",
     "GameState",
     "GreedyAgent",
+    "KalahNet",
     "MCTS",
     "MinimaxAgent",
     "NoisyAgent",
     "RandomAgent",
+    "ResidualKalahNet",
     "SearchResult",
 ]

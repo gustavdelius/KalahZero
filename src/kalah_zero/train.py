@@ -29,6 +29,9 @@ class TrainConfig:
     opening_plies_min: int | None = None
     opening_plies_max: int | None = None
     use_fast_game: bool = False
+    model_type: str = "mlp"
+    hidden_size: int = 128
+    residual_blocks: int = 3
 
 
 @dataclass(frozen=True, slots=True)

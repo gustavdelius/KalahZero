@@ -83,6 +83,19 @@ Or sample a different opening length each game:
 python scripts/train.py --resume checkpoints/overnight.pt --games 3000 --opening-plies-min 0 --opening-plies-max 8
 ```
 
+To compare network capacity experiments cleanly, start separate checkpoints:
+
+```bash
+# depth only: residual MLP, same hidden width as the baseline
+python scripts/train.py --model-type residual --hidden-size 128 --residual-blocks 3 --output checkpoints/residual_depth.pt
+
+# width only: plain MLP, wider hidden representation
+python scripts/train.py --model-type mlp --hidden-size 256 --output checkpoints/mlp_width.pt
+
+# depth plus width
+python scripts/train.py --model-type residual --hidden-size 256 --residual-blocks 3 --output checkpoints/residual_width.pt
+```
+
 Play against a baseline:
 
 ```bash
