@@ -110,6 +110,17 @@ quarto preview
 
 Then open the **Play** page in the navbar.
 
+To play the browser board against a trained checkpoint, start the local agent
+server in another terminal:
+
+```bash
+python scripts/agent_server.py --checkpoint checkpoints/overnight.pt \
+  --simulations 250 --batched-mcts --eval-batch-size 8 --fast-game
+```
+
+Then choose **Trained agent** from the Play page opponent menu. The default
+browser endpoint is `http://127.0.0.1:8765/move`.
+
 Read the tutorials in order from `tutorials/01_kalah_rules.md`.
 
 ## Tutorial Website

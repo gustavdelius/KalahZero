@@ -23,7 +23,12 @@ format:
         <select id="opponent">
           <option value="greedy" selected>Greedy</option>
           <option value="random">Random</option>
+          <option value="trained">Trained agent</option>
         </select>
+      </label>
+      <label id="agent-url-control">
+        Agent server
+        <input id="agent-url" type="url" value="http://127.0.0.1:8765/move">
       </label>
       <label>
         You

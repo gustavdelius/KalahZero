@@ -13,6 +13,7 @@
   let opponent = "greedy";
   let history = [];
   let busy = false;
+  let agentError = "";
 
   function newGame() {
     return {
@@ -158,11 +159,15 @@
     elements.history = document.querySelector("#history");
     elements.positionSummary = document.querySelector("#position-summary");
     elements.opponent = document.querySelector("#opponent");
+    elements.agentUrlControl = document.querySelector("#agent-url-control");
+    elements.agentUrl = document.querySelector("#agent-url");
     elements.humanPlayer = document.querySelector("#human-player");
     elements.newGame = document.querySelector("#new-game");
 
     elements.opponent.addEventListener("change", () => {
       opponent = elements.opponent.value;
+      agentError = "";
+      updateAgentUrlControl();
       maybeAgentMove();
     });
     elements.humanPlayer.addEventListener("change", () => {
@@ -172,6 +177,7 @@
     elements.newGame.addEventListener("click", resetGame);
 
     render();
+    updateAgentUrlControl();
     maybeAgentMove();
   }
 
@@ -179,6 +185,7 @@
     state = newGame();
     history = [];
     busy = false;
+    agentError = "";
     render();
     maybeAgentMove();
   }
@@ -193,13 +200,49 @@
     if (busy || isTerminal(state) || isHumanTurn()) return;
     busy = true;
     render();
-    window.setTimeout(() => {
-      const action = opponent === "random" ? chooseRandom(state) : chooseGreedy(state);
-      playAction(action);
-      busy = false;
-      render();
-      maybeAgentMove();
+    window.setTimeout(async () => {
+      try {
+        const action = await chooseOpponentAction(state);
+        agentError = "";
+        playAction(action);
+        busy = false;
+        render();
+        maybeAgentMove();
+      } catch (error) {
+        agentError = error.message || String(error);
+        busy = false;
+        render();
+      }
     }, HUMAN_DELAY_MS);
+  }
+
+  async function chooseOpponentAction(gameState) {
+    if (opponent === "random") return chooseRandom(gameState);
+    if (opponent === "greedy") return chooseGreedy(gameState);
+    if (opponent === "trained") return requestTrainedAgentMove(gameState);
+    throw new Error(`Unknown opponent ${opponent}`);
+  }
+
+  async function requestTrainedAgentMove(gameState) {
+    const endpoint = elements.agentUrl.value.trim();
+    if (!endpoint) throw new Error("Agent server URL is empty");
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        board: gameState.board,
+        current_player: gameState.currentPlayer,
+        pits: PITS,
+      }),
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(payload.error || `Agent server returned ${response.status}`);
+    }
+    if (!legalActions(gameState).includes(payload.action)) {
+      throw new Error(`Agent server returned illegal action ${payload.action}`);
+    }
+    return payload.action;
   }
 
   function playAction(action) {
@@ -223,6 +266,10 @@
     renderStore(elements.southStore, state.board[STORE_0], "South store");
     renderPitRows();
     renderHistory();
+  }
+
+  function updateAgentUrlControl() {
+    elements.agentUrlControl.classList.toggle("hidden", opponent !== "trained");
   }
 
   function renderPitRows() {
@@ -308,6 +355,7 @@
       if (score(0) === score(1)) return `Draw, ${score(0)}-${score(1)}`;
       return `${score(0) > score(1) ? "South" : "North"} wins, ${score(0)}-${score(1)}`;
     }
+    if (agentError) return `Agent server error: ${agentError}`;
     if (busy) return `${playerName(state.currentPlayer)} thinking`;
     return `${playerName(state.currentPlayer)} to move`;
   }
@@ -336,4 +384,3 @@
     module.exports = { newGame, applyMove, legalActions, isTerminal, PITS, STORE_0, STORE_1 };
   }
 })();
-

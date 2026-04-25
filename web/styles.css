@@ -31,6 +31,7 @@ body {
 }
 
 button,
+input,
 select {
   font: inherit;
 }
@@ -94,6 +95,7 @@ label {
   text-transform: uppercase;
 }
 
+input,
 select,
 button {
   min-height: 40px;
@@ -103,6 +105,7 @@ button {
   color: var(--ink);
 }
 
+input,
 select {
   padding: 0 34px 0 12px;
 }
@@ -114,15 +117,25 @@ button {
 }
 
 button:hover,
+input:hover,
 select:hover {
   border-color: #9eb0b8;
 }
 
 button:focus-visible,
+input:focus-visible,
 select:focus-visible,
 .pit-button:focus-visible {
   outline: 3px solid color-mix(in srgb, var(--focus) 38%, transparent);
   outline-offset: 2px;
+}
+
+#agent-url-control {
+  min-width: 270px;
+}
+
+#agent-url-control.hidden {
+  display: none;
 }
 
 .scorebar {
