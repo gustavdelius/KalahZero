@@ -6,6 +6,9 @@ This lesson explains how AlphaZero creates its own dataset. There is no database
 of expert Kalah games. The system improves by playing itself, searching, and
 training on the search results.
 
+Self-play means the current agent plays both sides. The games it generates are
+then used as training data for the next version of the same agent.
+
 One self-play game produces samples:
 
 $$
@@ -17,7 +20,7 @@ $$
 
 At time $t$:
 
-1. Run MCTS from $s_t$.
+1. Run Monte Carlo Tree Search (MCTS) from $s_t$.
 2. Convert visit counts into a policy target $\pi_t$.
 3. Pick an action $a_t$.
 4. Apply the action to get $s_{t+1}=T(s_t,a_t)$.
@@ -44,9 +47,10 @@ $$
 {\sum_b N(s_t,b)^{1/\tau}},
 $$
 
-where $\tau$ is the temperature. In the code, temperature is used when
-selecting the played action. The stored policy remains the normalized visit
-distribution returned by search.
+where $\tau$ is the temperature. Temperature is a knob that controls how random
+the action choice is. In the code, temperature is used when selecting the played
+action. The stored policy remains the normalized visit distribution returned by
+search.
 
 When $\tau = 1$, actions are sampled roughly according to visits. As
 $\tau \to 0$, selection becomes greedy:
@@ -79,7 +83,8 @@ This line is easy to miss. The value target is not "did player 0 win?" It is
 
 ## Replay Buffer
 
-The replay buffer approximates a dataset:
+The replay buffer is a fixed-size memory of recent training samples. It
+approximates a dataset:
 
 $$
 \mathcal{D} =
@@ -98,8 +103,10 @@ def add_many(self, samples: list[TrainingSample]) -> None:
 
 ## Safe Interruption And Resume
 
-Long CPU runs should be interruptible. The training script periodically saves a
-checkpoint containing:
+Long CPU runs should be interruptible. CPU means central processing unit: the
+ordinary laptop processor, as opposed to a GPU, a graphics processing unit. The
+training script periodically saves a checkpoint, which is a file containing
+enough state to resume later:
 
 - model weights,
 - optimizer state,

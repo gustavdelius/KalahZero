@@ -5,6 +5,10 @@
 This final lesson gives you a map of the code. The project is small enough that
 you can read all of it, but it helps to know the order.
 
+This lesson uses a few names from earlier chapters: MCTS means Monte Carlo Tree
+Search, `ReplayBuffer` is the fixed-size memory of recent training samples, and
+$\pi$ is the policy target produced from search visit counts.
+
 The whole AlphaZero loop is:
 
 $$
@@ -143,4 +147,3 @@ python scripts/train.py --games 1 --simulations 5 --epochs 1
 
 Then open the files above and trace one state from construction to training
 sample. Write down every function it passes through.
-

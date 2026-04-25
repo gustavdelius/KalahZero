@@ -29,7 +29,8 @@ $$
 
 ## Value Loss
 
-The value term is mean squared error:
+The value term is mean squared error, the average squared difference between a
+prediction and its target. For one sample:
 
 $$
 \mathcal{L}_{\text{value}}
@@ -47,8 +48,8 @@ This teaches the network to predict who eventually wins.
 
 ## Policy Loss
 
-The policy target $\pi$ comes from MCTS visit counts, not from a human. The
-cross-entropy term is:
+The policy target $\pi$ comes from Monte Carlo Tree Search (MCTS) visit counts,
+not from a human. The cross-entropy term is:
 
 $$
 \mathcal{L}_{\text{policy}}
@@ -70,7 +71,8 @@ $$
 
 ## Regularization
 
-The regularizer is:
+Regularization is an extra penalty that discourages overly large model weights.
+Here the regularizer is an L2 penalty, meaning a sum of squared weights:
 
 $$
 \mathcal{L}_{\text{reg}}
@@ -97,7 +99,8 @@ value_loss = F.mse_loss(values, value_targets)
 loss = policy_loss + value_loss + l2_loss
 ```
 
-The network returns logits rather than probabilities. `log_softmax` computes:
+The network returns logits rather than probabilities. A logit is an
+unnormalized score; `log_softmax` converts those scores into log probabilities:
 
 $$
 \log p_\theta(a \mid s)
@@ -118,4 +121,3 @@ python scripts/train.py --games 4 --simulations 25 --epochs 2
 Watch the policy and value losses separately. If the value loss drops while
 policy loss does not, the network may be learning winners faster than move
 preferences.
-

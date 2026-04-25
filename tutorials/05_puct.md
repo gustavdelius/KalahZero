@@ -2,8 +2,16 @@
 
 ## Goal
 
+UCT means Upper Confidence bounds applied to Trees, the selection rule from the
+previous lesson. PUCT is the AlphaZero-style version of that rule. The "P" is
+often read as "predictor" or "prior" because the neural network predicts which
+moves deserve attention before search has tried them much.
+
 This lesson explains the key AlphaZero move: replacing random rollout guidance
-with a neural network that supplies policy priors and value estimates.
+with a neural network that supplies policy priors and value estimates. A rollout
+is a simulated continuation of the game used to estimate who is likely to win.
+A policy prior is a probability assigned to a move before the search has
+gathered many visit counts for that move.
 
 The network represents:
 
@@ -91,8 +99,10 @@ P'(s,a) =
 \eta \sim \operatorname{Dirichlet}(\alpha).
 $$
 
-This encourages opening diversity. Without it, self-play can collapse into a
-small set of familiar games.
+A Dirichlet distribution is a probability distribution over probability
+vectors. Here it produces a random legal-move distribution $\eta$ that can be
+mixed into the network's prior. This encourages opening diversity. Without it,
+self-play can collapse into a small set of familiar games.
 
 Code:
 
@@ -135,4 +145,3 @@ python scripts/inspect_position.py --simulations 200 --tree-depth 1
 
 Then open `src/kalah_zero/mcts.py` and set `use_puct=False` in a small script.
 Compare how UCT and PUCT distribute visits when priors are uniform.
-

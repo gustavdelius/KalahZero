@@ -4,6 +4,8 @@
 
 This lesson teaches you how to look inside the search. AlphaZero bugs often
 produce legal-looking games with bad learning signals, so observability matters.
+Instrumentation means adding outputs and summaries that help you inspect what
+the program is doing.
 
 The most useful quantities are:
 
@@ -13,7 +15,8 @@ $$
 
 ## Tree Dumps
 
-`MCTS.dump_tree` prints the visit count, mean value, and prior:
+`MCTS.dump_tree` prints the visit count, mean value, and prior. A prior is the
+move probability supplied before search has gathered much evidence:
 
 ```python
 lines.append(
@@ -70,7 +73,7 @@ $$
 \text{for all } a \notin \mathcal{A}(s).
 $$
 
-The tests check that MCTS respects this:
+The tests check that Monte Carlo Tree Search (MCTS) respects this:
 
 ```python
 self.assertEqual(result.policy[0], 0.0)
@@ -100,4 +103,3 @@ python scripts/inspect_position.py --board "0,0,1,0,0,1,0,0,0,5,0,0,1,0" --playe
 
 This is a capture position from the tests. Check whether search gives visits to
 the capturing move.
-

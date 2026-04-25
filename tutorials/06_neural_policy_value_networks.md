@@ -3,7 +3,9 @@
 ## Goal
 
 This lesson explains what the neural network predicts, how a Kalah board becomes
-a tensor, and why AlphaZero uses two heads.
+a tensor, and why AlphaZero uses two heads. A tensor is the array object used by
+PyTorch; in this lesson it is just a vector of numbers. A head is an output
+branch of a neural network.
 
 The network approximates:
 
@@ -64,7 +66,8 @@ $$
 h = g_\theta(x).
 $$
 
-The policy head produces logits:
+The policy head produces logits. A logit is an unnormalized score; the softmax
+function converts logits into probabilities:
 
 $$
 \ell = W_p h + b_p,
@@ -103,7 +106,8 @@ class KalahNet(nn.Module):
 ## Illegal Move Masking
 
 The network can assign a large logit to an empty pit. That is not a bug by
-itself; the evaluator masks illegal moves before search sees probabilities:
+itself; the evaluator masks illegal moves before search sees probabilities.
+Masking means setting illegal moves to probability zero:
 
 ```python
 mask = torch.full_like(logits, float("-inf"))
@@ -133,4 +137,3 @@ python scripts/train.py --games 2 --simulations 10 --epochs 1
 ```
 
 Then print `encode_features(GameState.new_game())` and identify each feature.
-

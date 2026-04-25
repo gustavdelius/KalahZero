@@ -43,7 +43,8 @@ baseline agents.
 
 - An immutable Kalah game engine.
 - Random, greedy, and minimax agents.
-- UCT and AlphaZero-style PUCT search.
+- Upper Confidence bounds applied to Trees (UCT) and AlphaZero-style Predictor
+  UCT (PUCT) search.
 - A PyTorch policy-value network.
 - A self-play training loop with replay buffer.
 - Evaluation and inspection scripts.

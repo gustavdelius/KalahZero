@@ -64,12 +64,15 @@ h_{k+1} = h_k + F_k(h_k).
 $$
 
 Residual connections make deeper networks easier to train, but they add
-complexity. For learning AlphaZero, the MLP is the right first model.
+complexity. MLP stands for multilayer perceptron; it means a feed-forward neural
+network made from ordinary linear layers and nonlinearities. For learning
+AlphaZero, the MLP is the right first model.
 
 ## Batched MCTS Evaluations
 
-The biggest engineering upgrade is batching. Instead of evaluating one leaf at a
-time:
+MCTS means Monte Carlo Tree Search. The biggest engineering upgrade is batching:
+processing several positions together instead of one at a time. Instead of
+evaluating one leaf at a time:
 
 $$
 f_\theta(s_1), f_\theta(s_2), \ldots, f_\theta(s_B),
@@ -89,7 +92,9 @@ x(s_B)
 \right).
 $$
 
-This makes better use of vectorized CPU operations and GPUs.
+This makes better use of vectorized CPU operations and GPUs. CPU means central
+processing unit, the ordinary laptop processor. GPU means graphics processing
+unit, a processor designed for many parallel numeric operations.
 
 ## Practice
 
@@ -105,4 +110,3 @@ Then compare:
 ```bash
 python scripts/evaluate.py --checkpoint-a checkpoints/larger_search.pt --checkpoint-b checkpoints/small.pt --games 20
 ```
-

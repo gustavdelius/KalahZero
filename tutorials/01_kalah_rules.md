@@ -111,8 +111,8 @@ def apply(self, action: int) -> GameState:
 ```
 
 The important design point is that all later algorithms see Kalah only through
-this transition function. MCTS, minimax, and self-play do not need special
-knowledge of sowing or capture.
+this transition function. Minimax, Monte Carlo Tree Search (MCTS), and self-play
+do not need special knowledge of sowing or capture.
 
 ## Extra Moves
 
@@ -141,7 +141,7 @@ The implementation records this in one line:
 next_player = mover if index == own_store or captured_stones else 1 - mover
 ```
 
-This rule matters for search. Minimax and MCTS must look at
+This rule matters for search. Minimax and Monte Carlo Tree Search (MCTS) must look at
 `state.current_player` after applying a move; they cannot simply assume that
 turns alternate.
 

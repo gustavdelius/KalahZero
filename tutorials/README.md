@@ -26,7 +26,9 @@ $$
 2. [Perfect-Information Games](02_perfect_information_games.md)
 3. [Baseline Agents](03_baseline_agents.md)
 4. [Monte Carlo Tree Search](04_monte_carlo_tree_search.md)
-5. [From UCT to AlphaZero PUCT](05_puct.md)
+5. [From UCT to AlphaZero PUCT](05_puct.md), where UCT means Upper Confidence
+   bounds applied to Trees and PUCT is AlphaZero's predictor/prior-guided
+   variant.
 6. [Neural Policy and Value Networks](06_neural_policy_value_networks.md)
 7. [Self-Play Training Loop](07_self_play_training.md)
 8. [AlphaZero Loss Derivation](08_alphazero_loss.md)
@@ -34,4 +36,3 @@ $$
 10. [Instrumentation and Debugging](10_instrumentation.md)
 11. [Scaling Strength](11_scaling_strength.md)
 12. [Reading the Whole Codebase](12_codebase_walkthrough.md)
-

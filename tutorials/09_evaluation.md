@@ -5,6 +5,9 @@
 This lesson separates "the loss went down" from "the agent got stronger."
 AlphaZero-style systems must be evaluated by playing games.
 
+Elo is a rating system originally designed for chess. It converts match results
+into numbers that estimate relative player strength.
+
 Suppose agent $A$ plays $n$ games and gets $w$ wins, $d$ draws, and
 $\ell$ losses. Its score rate is:
 
@@ -54,8 +57,9 @@ $$
 
 ## Confidence
 
-A win rate is an estimate. If we model each game as a Bernoulli trial with win
-probability $p$, then the standard error of $\hat{p}$ is approximately:
+A win rate is an estimate. A Bernoulli trial is a random experiment with two
+outcomes, such as win/loss if we ignore draws. If we model each game this way
+with win probability $p$, then the standard error of $\hat{p}$ is approximately:
 
 $$
 \operatorname{SE}(\hat{p})
@@ -89,8 +93,8 @@ python scripts/evaluate.py --agent-a greedy --agent-b random --games 50
 python scripts/evaluate.py --checkpoint-a checkpoints/kalah_zero.pt --agent-b greedy --games 40
 ```
 
-The checkpoint path creates a `NeuralEvaluator`, wraps it in MCTS, and plays it
-like any other agent.
+The checkpoint path creates a `NeuralEvaluator`, wraps it in Monte Carlo Tree
+Search (MCTS), and plays it like any other agent.
 
 ## Practice
 
@@ -102,4 +106,3 @@ python scripts/evaluate.py --agent-a greedy --agent-b random --games 100
 ```
 
 Compare how stable the result feels.
-
