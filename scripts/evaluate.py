@@ -6,9 +6,12 @@ import random
 import sys
 
 import _path  # noqa: F401
-from kalah_zero.agents import GreedyAgent, MCTSAgent, MinimaxAgent, RandomAgent
+from kalah_zero.agents import GreedyAgent, MCTSAgent, MinimaxAgent, NoisyAgent, RandomAgent
 from kalah_zero.evaluate import arena
 from kalah_zero.mcts import MCTS, UniformEvaluator
+
+
+AGENT_CHOICES = ["random", "greedy", "minimax", "mcts", "noisy-greedy", "noisy-minimax", "noisy-mcts"]
 
 
 def build_search(simulations: int, use_batched_mcts: bool, eval_batch_size: int):
@@ -26,35 +29,41 @@ def build_agent(
     simulations: int = 100,
     use_batched_mcts: bool = False,
     eval_batch_size: int = 32,
+    noise_prob: float = 0.1,
 ):
+    noisy = name.startswith("noisy-")
+    base_name = name.removeprefix("noisy-")
     if checkpoint is not None:
         from kalah_zero.network import NeuralEvaluator, load_checkpoint
 
         model, _ = load_checkpoint(checkpoint)
-        return MCTSAgent(
+        agent = MCTSAgent(
             build_search(simulations, use_batched_mcts, eval_batch_size),
             NeuralEvaluator(model),
             temperature=0.0,
         )
-    if name == "random":
-        return RandomAgent(random.Random(seed))
-    if name == "greedy":
-        return GreedyAgent()
-    if name == "minimax":
-        return MinimaxAgent(depth=6)
-    if name == "mcts":
-        return MCTSAgent(
+        return NoisyAgent(agent, epsilon=noise_prob, rng=random.Random(seed)) if noisy else agent
+    if base_name == "random":
+        agent = RandomAgent(random.Random(seed))
+    elif base_name == "greedy":
+        agent = GreedyAgent()
+    elif base_name == "minimax":
+        agent = MinimaxAgent(depth=6)
+    elif base_name == "mcts":
+        agent = MCTSAgent(
             build_search(simulations, use_batched_mcts, eval_batch_size),
             UniformEvaluator(),
             temperature=0.0,
         )
-    raise ValueError(f"unknown agent {name}")
+    else:
+        raise ValueError(f"unknown agent {name}")
+    return NoisyAgent(agent, epsilon=noise_prob, rng=random.Random(seed)) if noisy else agent
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Evaluate two Kalah agents.")
-    parser.add_argument("--agent-a", choices=["random", "greedy", "minimax", "mcts"], default="greedy")
-    parser.add_argument("--agent-b", choices=["random", "greedy", "minimax", "mcts"], default="random")
+    parser.add_argument("--agent-a", choices=AGENT_CHOICES, default="greedy")
+    parser.add_argument("--agent-b", choices=AGENT_CHOICES, default="random")
     parser.add_argument("--checkpoint-a", help="Use a neural checkpoint for agent A.")
     parser.add_argument("--checkpoint-b", help="Use a neural checkpoint for agent B.")
     parser.add_argument("--simulations", type=int, default=100)
@@ -66,6 +75,12 @@ def main() -> None:
         type=int,
         default=0,
         help="Play this many random legal moves before evaluation. Openings are reused with agents swapped.",
+    )
+    parser.add_argument(
+        "--noise-prob",
+        type=float,
+        default=0.1,
+        help="Random-move probability for noisy-* agents.",
     )
     parser.add_argument("--seed", type=int, default=0)
     args = parser.parse_args()
@@ -87,6 +102,7 @@ def main() -> None:
             args.simulations,
             args.batched_mcts,
             args.eval_batch_size,
+            args.noise_prob,
         ),
         build_agent(
             args.agent_b,
@@ -95,6 +111,7 @@ def main() -> None:
             args.simulations,
             args.batched_mcts,
             args.eval_batch_size,
+            args.noise_prob,
         ),
         games=args.games,
         seed=args.seed,
@@ -109,6 +126,8 @@ def main() -> None:
         search_info += f", batched_mcts=True, eval_batch_size={args.eval_batch_size}"
     if args.opening_plies > 0:
         search_info += f", opening_plies={args.opening_plies}"
+    if args.agent_a.startswith("noisy-") or args.agent_b.startswith("noisy-"):
+        search_info += f", noise_prob={args.noise_prob}"
     print(
         f"{label_a} vs {label_b}: "
         f"{result.wins_0}-{result.wins_1}-{result.draws} "

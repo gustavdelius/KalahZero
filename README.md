@@ -55,6 +55,12 @@ The same opt-in works for checkpoint evaluation:
 python scripts/evaluate.py --checkpoint-a checkpoints/overnight.pt --agent-b minimax --simulations 200 --batched-mcts
 ```
 
+Noisy baselines are available for human-like mistake rates:
+
+```bash
+python scripts/evaluate.py --checkpoint-a checkpoints/overnight.pt --agent-b noisy-minimax --noise-prob 0.1
+```
+
 To train on less opening-specific positions, start each self-play game after a
 few random legal moves:
 

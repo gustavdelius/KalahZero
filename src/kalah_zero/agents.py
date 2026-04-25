@@ -23,6 +23,21 @@ class RandomAgent:
 
 
 @dataclass(slots=True)
+class NoisyAgent:
+    """Wrap another agent and sometimes choose a random legal move."""
+
+    base_agent: Agent
+    epsilon: float = 0.1
+    rng: random.Random | None = None
+
+    def select_action(self, state: GameState) -> int:
+        rng = self.rng or random
+        if rng.random() < self.epsilon:
+            return rng.choice(state.legal_actions())
+        return self.base_agent.select_action(state)
+
+
+@dataclass(slots=True)
 class GreedyAgent:
     """Choose the move with the best immediate store margin."""
 
@@ -99,4 +114,3 @@ class MCTSAgent:
     def select_action(self, state: GameState) -> int:
         result = self.mcts.search(state, self.evaluator)
         return result.select_action(temperature=self.temperature)
-

@@ -3,7 +3,7 @@ from __future__ import annotations
 import random
 import unittest
 
-from kalah_zero.agents import GreedyAgent, MinimaxAgent, RandomAgent
+from kalah_zero.agents import GreedyAgent, MinimaxAgent, NoisyAgent, RandomAgent
 from kalah_zero.batched_mcts import BatchedMCTS
 from kalah_zero.evaluate import arena, random_opening
 from kalah_zero.game import GameState
@@ -16,6 +16,13 @@ class AgentAndMCTSTests(unittest.TestCase):
         agent = RandomAgent(random.Random(0))
 
         self.assertIn(agent.select_action(state), state.legal_actions())
+
+    def test_noisy_agent_can_delegate_or_choose_randomly(self) -> None:
+        state = GameState.new_game()
+        greedy = GreedyAgent()
+
+        self.assertEqual(NoisyAgent(greedy, epsilon=0.0, rng=random.Random(0)).select_action(state), 2)
+        self.assertIn(NoisyAgent(greedy, epsilon=1.0, rng=random.Random(0)).select_action(state), state.legal_actions())
 
     def test_greedy_agent_prefers_extra_store_move_from_start(self) -> None:
         state = GameState.new_game()

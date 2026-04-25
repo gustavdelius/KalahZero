@@ -96,6 +96,38 @@ python scripts/evaluate.py --checkpoint-a checkpoints/kalah_zero.pt --agent-b gr
 The checkpoint path creates a `NeuralEvaluator`, wraps it in Monte Carlo Tree
 Search (MCTS), and plays it like any other agent.
 
+## Noisy Opponents
+
+Deterministic baselines answer one question: can agent $A$ beat this fixed
+policy? Human opponents answer a slightly different question because they make
+occasional mistakes. The evaluation script therefore includes noisy versions of
+the main baselines:
+
+```bash
+python scripts/evaluate.py --checkpoint-a checkpoints/overnight.pt \
+  --agent-b noisy-minimax --games 200 --noise-prob 0.05
+```
+
+The noisy wrapper uses an error probability $\epsilon$. At each move:
+
+$$
+a =
+\begin{cases}
+\text{a random legal action}, & \text{with probability } \epsilon, \\
+\text{the base agent's action}, & \text{with probability } 1-\epsilon.
+\end{cases}
+$$
+
+This does not replace deterministic evaluation. It complements it. A useful
+suite compares against both `minimax` and `noisy-minimax`, often with random
+openings:
+
+```bash
+python scripts/evaluate.py --checkpoint-a checkpoints/overnight.pt \
+  --agent-b noisy-minimax --games 200 --simulations 100 \
+  --opening-plies 4 --noise-prob 0.1
+```
+
 ## Practice
 
 Run:
