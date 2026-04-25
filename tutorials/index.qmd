@@ -5,8 +5,14 @@ title: "Tutorials"
 The tutorials are designed as a guided path from Kalah rules to AlphaZero-style
 self-play.
 
+If you are new to AI game playing, begin with
+[AI Game Learning in Plain Language](00_plain_language_intro.md). It introduces
+the main ideas without code or equations, so the technical chapters have a
+friendlier first step.
+
 ## Learning Path
 
+0. [AI Game Learning in Plain Language](00_plain_language_intro.md)
 1. [Kalah Rules and State Representation](01_kalah_rules.md)
 2. [Perfect-Information Games](02_perfect_information_games.md)
 3. [Baseline Agents](03_baseline_agents.md)
@@ -37,5 +43,6 @@ $$
 \text{experiment}.
 $$
 
-Read with the source tree open. The code excerpts are intentionally small; the
+For the plain-language page, read for the story. For the technical chapters,
+read with the source tree open. The code excerpts are intentionally small; the
 full implementation lives in `src/kalah_zero/`.

@@ -34,3 +34,25 @@ pre code {
   overflow-y: hidden;
 }
 
+.beginner-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  margin: 1.5rem 0 2rem;
+}
+
+.beginner-card {
+  border: 1px solid #d7e0e6;
+  border-radius: 8px;
+  padding: 1rem;
+  background: #f8fbfc;
+}
+
+.beginner-card h3 {
+  margin-top: 0;
+  font-size: 1.05rem;
+}
+
+.beginner-card p {
+  margin-bottom: 0;
+}

@@ -33,6 +33,8 @@ website:
           text: Overview
         - section: "Foundations"
           contents:
+            - href: tutorials/00_plain_language_intro.md
+              text: "0. Plain-Language Intro"
             - href: tutorials/01_kalah_rules.md
               text: "1. Kalah Rules"
             - href: tutorials/02_perfect_information_games.md

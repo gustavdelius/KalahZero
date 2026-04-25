@@ -8,6 +8,10 @@ principles. The project pairs derivation-first tutorials with a compact Python
 implementation of Kalah, baseline agents, Monte Carlo Tree Search, a PyTorch
 policy-value network, self-play training, and evaluation tools.
 
+You do not need to arrive already knowing what an AI agent, a neural network,
+or a search algorithm is. If you are simply curious about how a computer can
+learn to play a board game, this site has a gentle route for you too.
+
 The core loop is:
 
 $$
@@ -24,19 +28,34 @@ $$
 
 ## Start Here
 
-Read the lessons in order:
+Choose the doorway that fits you today:
 
-::: {.callout-tip title="First lesson"}
-Start with [Kalah Rules and State Representation](tutorials/01_kalah_rules.md).
-The game engine is the foundation for every search and learning algorithm that
-comes later.
+::: {.beginner-grid}
+
+::: {.beginner-card}
+### New to AI?
+
+Start with [AI Game Learning in Plain Language](tutorials/00_plain_language_intro.md).
+It explains agents, search, neural networks, and self-play without assuming any
+technical background.
 :::
 
-Play the browser version:
+::: {.beginner-card}
+### Prefer to Play First?
 
-::: {.callout-note title="Graphical board"}
-Open [the Kalah web app](web/index.qmd) to play against the browser-side
-baseline agents.
+Open [the Kalah web app](web/index.qmd), try a few moves, and watch how simple
+computer opponents make choices.
+:::
+
+::: {.beginner-card}
+### Ready for Code?
+
+Begin the technical path with
+[Kalah Rules and State Representation](tutorials/01_kalah_rules.md). The game
+engine is the foundation for every search and learning algorithm that comes
+later.
+:::
+
 :::
 
 ## What You Will Build
@@ -48,6 +67,23 @@ baseline agents.
 - A PyTorch policy-value network.
 - A self-play training loop with replay buffer.
 - Evaluation and inspection scripts.
+
+## A Plain-Language Map
+
+KalahZero is about a small cycle:
+
+- An **agent** is just a player that chooses moves.
+- **Search** means trying possible moves in your head before committing to one.
+- A **neural network** is a pattern learner that guesses which moves look
+  promising and who is likely to win.
+- **Self-play** means the agent improves by playing games against versions of
+  itself.
+- **Evaluation** means checking whether the newer player is actually stronger,
+  instead of merely different.
+
+The technical tutorials keep the equations, code, and experiments. The beginner
+material gives you the story first, so those details have somewhere friendly to
+land.
 
 ## Local Commands
 
