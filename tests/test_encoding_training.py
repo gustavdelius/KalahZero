@@ -28,6 +28,19 @@ class EncodingAndTrainingTests(unittest.TestCase):
         self.assertTrue(all(len(sample.policy) == config.pits for sample in samples))
         self.assertTrue(all(sample.value in (-1.0, 0.0, 1.0) for sample in samples))
 
+    def test_self_play_accepts_batched_mcts_factory(self) -> None:
+        from kalah_zero.batched_mcts import BatchedMCTS
+
+        config = TrainConfig(simulations=4, stones=1, temperature_moves=2)
+
+        samples = self_play_game(
+            UniformEvaluator(),
+            config,
+            mcts_factory=lambda: BatchedMCTS(simulations=config.simulations, batch_size=2),
+        )
+
+        self.assertGreater(len(samples), 0)
+
     def test_replay_buffer_respects_capacity(self) -> None:
         config = TrainConfig(simulations=2, stones=1)
         samples = self_play_game(UniformEvaluator(), config)
@@ -53,11 +66,14 @@ class OptionalTorchTests(unittest.TestCase):
         logits, value = model(encode_state(state).unsqueeze(0))
         evaluator = NeuralEvaluator(model)
         policy, scalar = evaluator.evaluate(state)
+        batch_results = evaluator.evaluate_batch([state, state.apply(2)])
 
         self.assertEqual(tuple(logits.shape), (1, state.pits))
         self.assertEqual(tuple(value.shape), (1,))
         self.assertEqual(len(policy), state.pits)
         self.assertTrue(-1.0 <= scalar <= 1.0)
+        self.assertEqual(len(batch_results), 2)
+        self.assertTrue(all(len(item[0]) == state.pits for item in batch_results))
 
     def test_training_checkpoint_round_trip(self) -> None:
         try:

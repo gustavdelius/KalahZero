@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import random
 from dataclasses import dataclass, field
+from typing import Callable
 
 from kalah_zero.encoding import encode_state
 from kalah_zero.game import GameState
@@ -21,6 +22,8 @@ class TrainConfig:
     replay_capacity: int = 10_000
     temperature_moves: int = 12
     seed: int = 0
+    use_batched_mcts: bool = False
+    eval_batch_size: int = 32
 
 
 @dataclass(frozen=True, slots=True)
@@ -57,13 +60,17 @@ def self_play_game(
     evaluator: Evaluator,
     config: TrainConfig,
     rng: random.Random | None = None,
+    mcts_factory: Callable[[], MCTS] | None = None,
 ) -> list[TrainingSample]:
     rng = rng or random.Random(config.seed)
-    mcts = MCTS(
-        simulations=config.simulations,
-        dirichlet_alpha=0.3,
-        rng=rng,
-    )
+    if mcts_factory is None:
+        mcts = MCTS(
+            simulations=config.simulations,
+            dirichlet_alpha=0.3,
+            rng=rng,
+        )
+    else:
+        mcts = mcts_factory()
     state = GameState.new_game(pits=config.pits, stones=config.stones)
     trajectory: list[tuple[GameState, tuple[float, ...], int]] = []
     move_index = 0
@@ -113,4 +120,3 @@ def train_step(model, optimizer, batch: list[TrainingSample], l2_weight: float =
         "value_loss": float(value_loss.detach()),
         "l2_loss": float(l2_loss.detach()),
     }
-

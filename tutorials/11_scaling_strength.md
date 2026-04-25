@@ -96,6 +96,31 @@ This makes better use of vectorized CPU operations and GPUs. CPU means central
 processing unit, the ordinary laptop processor. GPU means graphics processing
 unit, a processor designed for many parallel numeric operations.
 
+The code keeps the first MCTS implementation in `src/kalah_zero/mcts.py`
+unchanged for study. The faster implementation lives next to it in
+`src/kalah_zero/batched_mcts.py`. During one search it collects up to $B$ leaf
+states, evaluates those states together, then backs each result up through its
+own path. Here $B$ is the evaluation batch size:
+
+$$
+B = \texttt{eval\_batch\_size}.
+$$
+
+Use it during training with:
+
+```bash
+python scripts/train.py --games 300 --simulations 150 --epochs 1 \
+  --batched-mcts --eval-batch-size 32 \
+  --output checkpoints/overnight-batched.pt
+```
+
+If a resumed checkpoint was trained with batched MCTS and you want to turn it
+off for comparison, pass:
+
+```bash
+python scripts/train.py --resume checkpoints/overnight-batched.pt --no-batched-mcts
+```
+
 ## Practice
 
 Train two small checkpoints:

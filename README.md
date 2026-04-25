@@ -42,7 +42,18 @@ python scripts/train.py --resume checkpoints/overnight.pt
 
 Use `--checkpoint-every N` to control periodic saves. On resume, `--games`
 means the total number of games you want completed, not the number of additional
-games.
+games. To speed neural self-play on a laptop CPU, opt into batched MCTS leaf
+evaluation:
+
+```bash
+python scripts/train.py --games 300 --simulations 150 --epochs 1 --batched-mcts --eval-batch-size 32
+```
+
+The same opt-in works for checkpoint evaluation:
+
+```bash
+python scripts/evaluate.py --checkpoint-a checkpoints/overnight.pt --agent-b minimax --simulations 200 --batched-mcts
+```
 
 Play against a baseline:
 

@@ -29,6 +29,24 @@ def build_parser() -> argparse.ArgumentParser:
         help="Save every N completed games. Use 0 to save only at the end or on interrupt.",
     )
     parser.add_argument("--seed", type=int, help="Random seed for a fresh run.")
+    parser.add_argument(
+        "--batched-mcts",
+        dest="use_batched_mcts",
+        action="store_true",
+        default=None,
+        help="Batch neural leaf evaluations during MCTS self-play.",
+    )
+    parser.add_argument(
+        "--no-batched-mcts",
+        dest="use_batched_mcts",
+        action="store_false",
+        help="Disable batched MCTS when resuming a checkpoint that used it.",
+    )
+    parser.add_argument(
+        "--eval-batch-size",
+        type=int,
+        help="Number of MCTS leaf positions to evaluate at once when using --batched-mcts.",
+    )
     return parser
 
 
@@ -46,6 +64,30 @@ def config_from_args(args: argparse.Namespace, saved_config: TrainConfig | None 
         replay_capacity=base.replay_capacity,
         temperature_moves=base.temperature_moves,
         seed=args.seed if args.seed is not None else base.seed,
+        use_batched_mcts=(
+            args.use_batched_mcts
+            if args.use_batched_mcts is not None
+            else base.use_batched_mcts
+        ),
+        eval_batch_size=(
+            args.eval_batch_size
+            if args.eval_batch_size is not None
+            else base.eval_batch_size
+        ),
+    )
+
+
+def make_mcts_factory(config: TrainConfig, rng: random.Random):
+    if not config.use_batched_mcts:
+        return None
+
+    from kalah_zero.batched_mcts import BatchedMCTS
+
+    return lambda: BatchedMCTS(
+        simulations=config.simulations,
+        dirichlet_alpha=0.3,
+        rng=rng,
+        batch_size=config.eval_batch_size,
     )
 
 
@@ -124,7 +166,8 @@ def main() -> None:
         config = config_from_args(args, saved_config)
         print(
             f"resumed {args.resume}: completed_games={completed_games}, "
-            f"target_games={config.games_per_iteration}, buffer={len(buffer)}"
+            f"target_games={config.games_per_iteration}, buffer={len(buffer)}, "
+            f"batched_mcts={config.use_batched_mcts}"
         )
     else:
         config = config_from_args(args)
@@ -148,7 +191,12 @@ def main() -> None:
     try:
         for game_index in range(completed_games, config.games_per_iteration):
             evaluator = NeuralEvaluator(model)
-            samples = self_play_game(evaluator, config, rng)
+            samples = self_play_game(
+                evaluator,
+                config,
+                rng,
+                mcts_factory=make_mcts_factory(config, rng),
+            )
             buffer.add_many(samples)
             completed_games = game_index + 1
             print(f"game {completed_games}: collected {len(samples)} positions, buffer={len(buffer)}")

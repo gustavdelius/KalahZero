@@ -43,17 +43,31 @@ class NeuralEvaluator:
     device: str = "cpu"
 
     def evaluate(self, state: GameState) -> tuple[list[float], float]:
+        return self.evaluate_batch([state])[0]
+
+    def evaluate_batch(self, states: list[GameState]) -> list[tuple[list[float], float]]:
         torch = _torch()
+        if not states:
+            return []
         self.model.eval()
         with torch.no_grad():
-            x = encode_state(state).to(self.device).unsqueeze(0)
-            logits, value = self.model(x)
-            logits = logits.squeeze(0).detach().cpu()
-            mask = torch.full_like(logits, float("-inf"))
-            for action in state.legal_actions():
-                mask[action] = 0.0
-            probs = torch.softmax(logits + mask, dim=0)
-        return probs.tolist(), float(value.item())
+            x = torch.stack([encode_state(state) for state in states]).to(self.device)
+            logits, values = self.model(x)
+            logits = logits.detach().cpu()
+            values = values.detach().cpu()
+
+        results: list[tuple[list[float], float]] = []
+        for state, row, value in zip(states, logits, values):
+            mask = torch.full_like(row, float("-inf"))
+            legal = state.legal_actions()
+            if legal:
+                for action in legal:
+                    mask[action] = 0.0
+                probs = torch.softmax(row + mask, dim=0)
+            else:
+                probs = torch.zeros_like(row)
+            results.append((probs.tolist(), float(value.item())))
+        return results
 
 
 def save_checkpoint(path: str, model: KalahNet, optimizer=None, step: int = 0) -> None:
