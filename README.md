@@ -89,6 +89,12 @@ To train across different starting stone counts:
 python scripts/train.py --resume checkpoints/residual_depth.pt --games 12000 --stones-min 4 --stones-max 6
 ```
 
+To bias training toward harder starting stone counts, use relative weights:
+
+```bash
+python scripts/train.py --games 12000 --stone-weights 4:1,5:1,6:2
+```
+
 Evaluate exact 6-stone play with:
 
 ```bash

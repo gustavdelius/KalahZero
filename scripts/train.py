@@ -28,6 +28,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--stones", type=int, help="Exact starting stones per pit.")
     parser.add_argument("--stones-min", type=int, help="Minimum starting stones per pit.")
     parser.add_argument("--stones-max", type=int, help="Maximum starting stones per pit.")
+    parser.add_argument(
+        "--stone-weights",
+        type=parse_stone_weights,
+        help="Weighted starting-stone distribution, e.g. '4:1,5:1,6:2'. Overrides --stones ranges.",
+    )
     parser.add_argument("--output", help=f"Checkpoint path. Defaults to {DEFAULT_OUTPUT!r}.")
     parser.add_argument("--resume", help="Resume from an existing training checkpoint.")
     parser.add_argument(
@@ -86,6 +91,34 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def parse_stone_weights(text: str) -> tuple[tuple[int, float], ...]:
+    weights: list[tuple[int, float]] = []
+    for raw_item in text.split(","):
+        item = raw_item.strip()
+        if not item:
+            continue
+        if ":" not in item:
+            raise argparse.ArgumentTypeError(
+                "stone weights must look like '4:1,5:1,6:2'"
+            )
+        raw_stones, raw_weight = item.split(":", 1)
+        try:
+            stones = int(raw_stones)
+            weight = float(raw_weight)
+        except ValueError as exc:
+            raise argparse.ArgumentTypeError(
+                "stone weights must use integer stone counts and numeric weights"
+            ) from exc
+        if stones < 0:
+            raise argparse.ArgumentTypeError("stone counts must be non-negative")
+        if weight <= 0:
+            raise argparse.ArgumentTypeError("stone weights must be positive")
+        weights.append((stones, weight))
+    if not weights:
+        raise argparse.ArgumentTypeError("stone weights must not be empty")
+    return tuple(weights)
+
+
 def config_from_args(args: argparse.Namespace, saved_config: TrainConfig | None = None) -> TrainConfig:
     base = saved_config or TrainConfig()
     opening_plies = args.opening_plies if args.opening_plies is not None else base.opening_plies
@@ -100,17 +133,25 @@ def config_from_args(args: argparse.Namespace, saved_config: TrainConfig | None 
     stones = args.stones if args.stones is not None else base.stones
     stones_min = base.stones_min
     stones_max = base.stones_max
+    stone_weights = base.stone_weights
     if args.stones is not None:
         stones_min = None
         stones_max = None
+        stone_weights = None
     if args.stones_min is not None or args.stones_max is not None:
         stones_min = args.stones_min
         stones_max = args.stones_max
+        stone_weights = None
+    if args.stone_weights is not None:
+        stone_weights = args.stone_weights
+        stones_min = None
+        stones_max = None
     return TrainConfig(
         pits=base.pits,
         stones=stones,
         stones_min=stones_min,
         stones_max=stones_max,
+        stone_weights=stone_weights,
         simulations=args.simulations if args.simulations is not None else base.simulations,
         games_per_iteration=args.games if args.games is not None else base.games_per_iteration,
         batch_size=args.batch_size if args.batch_size is not None else base.batch_size,
@@ -263,6 +304,7 @@ def main() -> None:
             f"replay_capacity={buffer.capacity}, "
             f"stones={config.stones}, stones_min={config.stones_min}, "
             f"stones_max={config.stones_max}, "
+            f"stone_weights={config.stone_weights}, "
             f"model_type={config.model_type}, hidden_size={config.hidden_size}, "
             f"residual_blocks={config.residual_blocks}, "
             f"batched_mcts={config.use_batched_mcts}, "

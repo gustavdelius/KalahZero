@@ -99,6 +99,22 @@ checkpoints/model.pt vs minimax: 90-105-5 (win rate 0.450, simulations=100)
         self.assertIn("6", command)
         self.assertNotIn("--stones-min", command)
 
+    def test_train_command_can_use_weighted_stone_distribution(self) -> None:
+        args = build_parser().parse_args(["--stone-weights", "4:1,5:1,6:2"])
+
+        command = build_train_command(
+            args,
+            checkpoint=Path("runs/block1.pt"),
+            previous_checkpoint=None,
+            target_games=1000,
+            focus_stone=None,
+            stones=[4, 5, 6],
+        )
+
+        self.assertIn("--stone-weights", command)
+        self.assertIn("4:1,5:1,6:2", command)
+        self.assertNotIn("--stones-min", command)
+
     def test_scheduled_value_repeats_last_item(self) -> None:
         self.assertEqual(scheduled_value("250,150,100", fallback=300, block=1), 250)
         self.assertEqual(scheduled_value("250,150,100", fallback=300, block=3), 100)

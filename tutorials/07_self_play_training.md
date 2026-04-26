@@ -234,7 +234,7 @@ self-play begins. This is set with `--opening-plies-min 0 --opening-plies-max 8`
 ## Mixed Starting Stones
 
 Kalah can be played with either 4, 5 or 6 stones in each pit at the start of the game.
-This is set wtih the `--stones` argument to `train.py` and `evaluate.py`.
+This is set with the `--stones` argument to `train.py` and `evaluate.py`.
 
 To teach one network to handle several starting positions, the trainer can also
 sample the number of starting stones. For example:
@@ -245,6 +245,27 @@ $$
 
 Then each self-play game starts from a new Kalah board with $c$ stones in every
 pit. This can be set with `--stones-min 4 --stones-max 6`.
+
+Uniform sampling is not always what we want. If 6-stone play is the weakest
+regime, we can sample it more often:
+
+$$
+\Pr(c=4)=\frac{1}{4},\qquad
+\Pr(c=5)=\frac{1}{4},\qquad
+\Pr(c=6)=\frac{2}{4}.
+$$
+
+The command-line form is:
+
+```bash
+python scripts/train.py \
+  --stone-weights 4:1,5:1,6:2 \
+  --games 12000
+```
+
+The numbers after the colons are relative weights, not probabilities. The
+trainer normalizes them internally, so `4:1,5:1,6:2` means 6-stone games are
+chosen twice as often as either 4-stone or 5-stone games.
 
 
 

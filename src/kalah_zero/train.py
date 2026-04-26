@@ -23,6 +23,7 @@ class TrainConfig:
     stones: int = 4                      # starting stones per pit (used when stones_min/max are None)
     stones_min: int | None = None        # if set, sample stones uniformly from [stones_min, stones_max]
     stones_max: int | None = None
+    stone_weights: tuple[tuple[int, float], ...] | None = None  # weighted starting-stone distribution
     simulations: int = 50                # MCTS simulations per move
     games_per_iteration: int = 8         # self-play games to generate before each training update
     batch_size: int = 64                 # number of samples drawn from the replay buffer per gradient step
@@ -41,6 +42,22 @@ class TrainConfig:
     model_type: str = "mlp"             # network architecture: "mlp" or "residual"
     hidden_size: int = 128              # width of each hidden layer
     residual_blocks: int = 3            # number of residual blocks (only used when model_type="residual")
+
+    def __post_init__(self) -> None:
+        if self.stone_weights is None:
+            return
+        normalized: list[tuple[int, float]] = []
+        for stones, weight in self.stone_weights:
+            stone_count = int(stones)
+            stone_weight = float(weight)
+            if stone_count < 0:
+                raise ValueError("stone weights must use non-negative stone counts")
+            if stone_weight <= 0:
+                raise ValueError("stone weights must be positive")
+            normalized.append((stone_count, stone_weight))
+        if not normalized:
+            raise ValueError("stone_weights must not be empty")
+        object.__setattr__(self, "stone_weights", tuple(normalized))
 
 
 @dataclass(frozen=True, slots=True)
@@ -130,11 +147,9 @@ def self_play_game(
         ),
         rng,
         pits=config.pits,
-        stones=choose_stones(
+        stones=choose_training_stones(
             rng,
-            stones=config.stones,
-            stones_min=config.stones_min,
-            stones_max=config.stones_max,
+            config,
         ),
         state_cls=state_cls,
     )
@@ -159,6 +174,19 @@ def self_play_game(
         TrainingSample(position, policy, state.reward_for_player(player))
         for position, policy, player in trajectory
     ]
+
+
+def choose_training_stones(rng: random.Random, config: TrainConfig) -> int:
+    if config.stone_weights is None:
+        return choose_stones(
+            rng,
+            stones=config.stones,
+            stones_min=config.stones_min,
+            stones_max=config.stones_max,
+        )
+    choices = [stones for stones, _ in config.stone_weights]
+    weights = [weight for _, weight in config.stone_weights]
+    return rng.choices(choices, weights=weights, k=1)[0]
 
 
 def train_step(model, optimizer, batch: list[TrainingSample], l2_weight: float = 0.0) -> dict[str, float]:

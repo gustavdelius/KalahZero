@@ -14,7 +14,7 @@ from kalah_zero.encoding import (
 )
 from kalah_zero.game import GameState
 from kalah_zero.mcts import UniformEvaluator
-from kalah_zero.train import TrainConfig, ReplayBuffer, self_play_game
+from kalah_zero.train import TrainConfig, ReplayBuffer, choose_training_stones, self_play_game
 
 
 class EncodingAndTrainingTests(unittest.TestCase):
@@ -101,6 +101,17 @@ class EncodingAndTrainingTests(unittest.TestCase):
         self.assertGreater(len(samples), 0)
         self.assertIn(samples[0].state.total_stones, (48, 60, 72))
 
+    def test_training_can_weight_starting_stones(self) -> None:
+        import random
+
+        rng = random.Random(0)
+        config = TrainConfig(stone_weights=((4, 1.0), (6, 9.0)))
+
+        samples = [choose_training_stones(rng, config) for _ in range(200)]
+
+        self.assertTrue(set(samples).issubset({4, 6}))
+        self.assertGreater(samples.count(6), samples.count(4))
+
     def test_replay_buffer_respects_capacity(self) -> None:
         config = TrainConfig(simulations=2, stones=1)
         samples = self_play_game(UniformEvaluator(), config)
@@ -158,6 +169,7 @@ class OptionalTorchTests(unittest.TestCase):
                 build_parser,
                 config_from_args,
                 load_training_checkpoint,
+                parse_stone_weights,
                 save_training_checkpoint,
             )
         except ModuleNotFoundError:
@@ -217,6 +229,14 @@ class OptionalTorchTests(unittest.TestCase):
         self.assertEqual(updated_config.opening_plies_max, 8)
         self.assertEqual(updated_config.stones_min, 4)
         self.assertEqual(updated_config.stones_max, 6)
+
+        weighted_args = parser.parse_args(["--stone-weights", "4:1,5:1,6:2"])
+        weighted_config = config_from_args(weighted_args, loaded_config)
+
+        self.assertEqual(weighted_config.stone_weights, ((4, 1.0), (5, 1.0), (6, 2.0)))
+        self.assertIsNone(weighted_config.stones_min)
+        self.assertIsNone(weighted_config.stones_max)
+        self.assertEqual(parse_stone_weights("6:3"), ((6, 3.0),))
 
         fast_args = parser.parse_args(["--fast-game"])
         fast_config = config_from_args(fast_args, loaded_config)

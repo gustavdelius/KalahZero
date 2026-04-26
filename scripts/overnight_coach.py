@@ -119,6 +119,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--eval-games", type=int, default=100)
     parser.add_argument("--eval-simulations", default="25,50,100,150")
     parser.add_argument("--stones", default="4,5,6")
+    parser.add_argument(
+        "--stone-weights",
+        help="Weighted training stone distribution passed to train.py, e.g. '4:1,5:1,6:2'.",
+    )
     parser.add_argument("--opening-plies-min", type=int, default=0)
     parser.add_argument("--opening-plies-max", type=int, default=8)
     parser.add_argument("--eval-batch-size", type=int, default=8)
@@ -151,9 +155,15 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def train_stone_args(stones: list[int], focus_stone: int | None) -> list[str]:
+def train_stone_args(
+    stones: list[int],
+    focus_stone: int | None,
+    stone_weights: str | None = None,
+) -> list[str]:
     if focus_stone is not None:
         return ["--stones", str(focus_stone)]
+    if stone_weights is not None:
+        return ["--stone-weights", stone_weights]
     return ["--stones-min", str(min(stones)), "--stones-max", str(max(stones))]
 
 
@@ -202,7 +212,7 @@ def build_train_command(
         "--eval-batch-size",
         str(args.eval_batch_size),
     ]
-    command.extend(train_stone_args(stones, focus_stone))
+    command.extend(train_stone_args(stones, focus_stone, args.stone_weights))
     if previous_checkpoint is None:
         command.extend([
             "--model-type",
@@ -425,7 +435,12 @@ def main() -> None:
             train_simulations=train_simulations,
             epochs=epochs,
         )
-        focus_text = f"stones={next_focus}" if next_focus is not None else f"stones={min(stones)}..{max(stones)}"
+        if next_focus is not None:
+            focus_text = f"stones={next_focus}"
+        elif args.stone_weights is not None:
+            focus_text = f"stone_weights={args.stone_weights}"
+        else:
+            focus_text = f"stones={min(stones)}..{max(stones)}"
         print(
             f"\nblock {block}/{args.blocks}: train to {target_games} games "
             f"({focus_text}, simulations={train_simulations}, epochs={epochs})"
