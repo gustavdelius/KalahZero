@@ -130,6 +130,31 @@ To refresh the browser weights from a checkpoint:
 python scripts/export_browser_agent.py checkpoints/residual_depth.pt web/residual_depth.json
 ```
 
+## Overnight Coaching
+
+After the fixed-count encoding change, start a fresh checkpoint for mixed
+4/5/6-stone training. The overnight coach runs short train/evaluate cycles,
+logs results, and keeps `best.pt` according to a score that favors winning with
+fewer MCTS simulations:
+
+```bash
+python scripts/overnight_coach.py \
+  --output-dir runs/fixed-scale-overnight \
+  --blocks 8 \
+  --block-games 500 \
+  --train-simulations-schedule 250,250,200,200,150,150,100,100 \
+  --epochs-schedule 1,1,1,1,1,1,2,2 \
+  --eval-games 100
+```
+
+Each block evaluates exact 4-, 5-, and 6-stone play with random openings against
+minimax at several simulation budgets. It also evaluates against noisy minimax
+at a 10% mistake rate. Results are written to:
+
+- `runs/fixed-scale-overnight/metrics.csv`
+- `runs/fixed-scale-overnight/summary.json`
+- `runs/fixed-scale-overnight/best.pt`
+
 Read the tutorials in order from `tutorials/01_kalah_rules.md`.
 
 ## Tutorial Website
