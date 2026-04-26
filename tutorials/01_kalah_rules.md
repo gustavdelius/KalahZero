@@ -6,16 +6,37 @@ By the end of this lesson, you should be able to explain exactly what a Kalah
 state is, how an action changes it, and why an AlphaZero project starts with a
 small, trustworthy game engine.
 
+## The Game in Plain Language
+
+Kalah is a two-player board game played with stones and two rows of small **pits**. Each player owns a row of pits and one larger cup called a
+**store** (sometimes called a mancala). At the start of the game every pit
+contains the same number of stones and the stores are empty.
+
+On your turn you choose one of your own non-empty pits and pick up all its
+stones. You then **sow** them one by one into the pits and stores going
+counter-clockwise around the board, skipping your opponent's store. Two special
+rules apply:
+
+- **Extra turn.** If your last stone lands in your own store, or if your move
+  results in a capture (see below), you get another turn immediately.
+- **Capture.** If your last stone lands in one of your own pits that was
+  previously empty, and the pit directly opposite contains stones, you capture
+  all of those opposite stones plus your landing stone into your store.
+
+The game ends when all pits on one side of the board are empty. Any stones
+remaining on the other side go into that player's store. The player with more
+stones in their store wins.
+
+## Game states
+
 AlphaZero does not learn from pixels here. It learns from a formal game model.
-For Kalah, that model is a tuple:
+For Kalah, the state of the game is represented by a tuple:
 
 $$
 s = (b, p),
 $$
 
 where $b$ is the board vector and $p \in \{0, 1\}$ is the player to move.
-
-## Board Coordinates
 
 For the default game, $6$ pits and $4$ stones per pit, the board has
 $2 \cdot 6 + 2 = 14$ entries:
@@ -38,6 +59,27 @@ player $p$, so $P_0 = \{0,1,2,3,4,5\}$ and $P_1 = \{7,8,9,10,11,12\}$.
 A move is represented as a local pit number $a \in \{0,\ldots,5\}$ for the
 player to move.
 
+The diagram below shows the full board for the 6-pit game. Stones sow
+counter-clockwise, so Player 0 sows left-to-right through their own pits then
+up through Player 1's pits, and Player 1 sows right-to-left through their own
+pits then down through Player 0's pits. Each player skips the opponent's store.
+
+```text
+                          Player 1
+              <--------------------------------
+ +----------+----+----+----+----+----+----+----------+
+ | P1 store | 12 | 11 | 10 |  9 |  8 |  7 | P0 store |
+ |  (b_13)  |    |    |    |    |    |    |  (b_6)   |
+ |          |  0 |  1 |  2 |  3 |  4 |  5 |          |
+ +----------+----+----+----+----+----+----+----------+
+              -------------------------------->
+                          Player 0
+```
+
+Pit $i$ for Player 0 sits directly opposite pit $12-i$ for Player 1 (pit 0
+faces pit 12, pit 5 faces pit 7). This opposite pairing matters for the
+capture rule.
+
 Here is the corresponding code:
 
 ```python
@@ -56,22 +98,32 @@ class GameState:
 The `frozen=True` argument to `@dataclass` makes every instance immutable: any
 attempt to assign to a field after construction raises an error. This is the
 right choice here because search algorithms reuse states constantly. If
-`apply` mutated a board in place, one branch of the search tree could corrupt
+the code could mutated a game state in place, one branch of the search tree could corrupt
 another branch.
 
 ## Legal Actions
 
-The legal action set is:
+An **action** is a choice of which pit to sow from. It is represented as a
+local pit number $a \in \{0, 1, 2, 3, 4, 5\}$, where $0$ is the player's
+leftmost pit and $5$ is their rightmost. The word "local" means the number
+always counts from the current player's own side, regardless of which player
+is moving: action $2$ for Player 0 refers to board index $2$, while action $2$
+for Player 1 refers to board index $9$.
+
+A pit is legal to choose only if it is non-empty — you must have stones to sow.
+The legal action set is therefore:
 
 $$
 \mathcal{A}(s) =
-\{a \mid a \text{ is one of the current player's pits and } b_a > 0\}.
+\{a \mid a \in \{0,\ldots,5\} \text{ and } b_{\text{index}(p,\,a)} > 0\},
 $$
 
-In code, the definition is deliberately plain:
+where $\text{index}(p, a)$ converts a local pit number to a board index for
+player $p$. In code, the definition is deliberately plain:
 
 ```python
 def legal_actions(self) -> list[int]:
+    """Return the list of local action numbers the current player may choose."""
     if self.is_terminal():
         return []
     return [
@@ -81,16 +133,36 @@ def legal_actions(self) -> list[int]:
     ]
 ```
 
-That code is worth reading slowly: it expresses the rule, not an optimization.
-Teaching code should make the mathematical object easy to see.
+Reading it step by step:
+
+1. `self.pit_indices(self.current_player)` returns the **board indices** for the
+   current player's row of pits. For Player 0 that is `range(0, 6)` (indices
+   0–5); for Player 1 it is `range(7, 13)` (indices 7–12).
+
+2. `if self.board[index] > 0` filters out empty pits — you can only sow from a
+   pit that has stones in it.
+
+3. `self.action_for_index(self.current_player, index)` converts a board index
+   back to a **local action number** (0–5). For Player 0 the local number equals
+   the board index directly. For Player 1 it subtracts 7, so board index 7
+   becomes action 0, index 8 becomes action 1, and so on.
+
+The result is a list of local pit numbers the current player may legally choose.
 
 ## Transition Function
 
-The transition function is:
+A **transition function** is a precise description of how the game moves from
+one state to the next. Given the current state $s$ and a chosen action $a$, it
+returns the state $s'$ that results:
 
 $$
 s' = T(s, a).
 $$
+
+Having an explicit $T$ is what makes the game a formal model rather than a
+written rulebook. Any algorithm — minimax, MCTS, self-play — can ask "what
+happens if I do this?" by calling $T$, without needing to know anything about
+sowing or captures directly.
 
 For Kalah, $T$ does six things:
 
@@ -106,6 +178,7 @@ The public API is small:
 
 ```python
 def apply(self, action: int) -> GameState:
+    """Return the state that results from the current player choosing `action`."""
     if self.is_terminal():
         raise ValueError("cannot apply an action to a terminal state")
     if action not in self.legal_actions():
@@ -190,6 +263,7 @@ Code:
 
 ```python
 def reward_for_player(self, player: int) -> float:
+    """Return +1, 0, or -1 for win, draw, or loss for the given player."""
     own = self.store_for(player)
     other = self.store_for(1 - player)
     if own > other:

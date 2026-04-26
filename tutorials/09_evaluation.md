@@ -33,7 +33,7 @@ class ArenaResult:
 
 ## Alternating First Player
 
-Kalah may have a first-player advantage. To avoid confusing "agent strength"
+Kalah has a first-player advantage. To avoid confusing "agent strength"
 with "started first," the arena swaps seats:
 
 ```python

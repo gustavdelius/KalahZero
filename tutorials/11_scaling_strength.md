@@ -51,26 +51,13 @@ class TrainConfig:
 
 ## Bigger Networks
 
-The current model is a small multilayer perceptron:
+The current model uses three residual blocks, each of width 128. We could either use more blocks or make each
+block wider.
 
-$$
-x \rightarrow h_1 \rightarrow h_2 \rightarrow (p,v).
-$$
-
-A stronger version could use residual blocks:
-
-$$
-h_{k+1} = h_k + F_k(h_k).
-$$
-
-Residual connections make deeper networks easier to train, but they add
-complexity. MLP stands for multilayer perceptron; it means a feed-forward neural
-network made from ordinary linear layers and nonlinearities. For learning
-AlphaZero, the MLP is the right first model.
 
 ## Batched MCTS Evaluations
 
-MCTS means Monte Carlo Tree Search. The biggest engineering upgrade is batching:
+The biggest engineering upgrade is batching:
 processing several positions together instead of one at a time. Instead of
 evaluating one leaf at a time:
 

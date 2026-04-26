@@ -47,23 +47,8 @@ where:
 - $P$ is a fixed pit scale. In the code, $P=18$.
 - $B$ is a fixed store scale. In the code, $B=72$.
 
-The scales are fixed constants, not values computed from the current board.
-That matters when one network learns games with different starting stone
-counts. If we divided every count by the total number of stones, the 4-, 5-,
-and 6-stone opening boards would look identical:
-
-$$
-\frac{4}{48} = \frac{5}{60} = \frac{6}{72}.
-$$
-
-With fixed pit scaling, the actual counts remain visible:
-
-$$
-\frac{4}{18} \ne \frac{5}{18} \ne \frac{6}{18}.
-$$
-
-So the encoding keeps the real game state information, but still gives the
-network inputs in a comfortable numeric range.
+The scales are fixed constants, that transform the
+network inputs into a comfortable numeric range.
 
 Code:
 
@@ -113,24 +98,6 @@ $$
 
 The `tanh` keeps values in $[-1,1]$, matching the reward scale.
 
-Code:
-
-```python
-class KalahNet(nn.Module):
-    def __init__(self, pits: int = 6, hidden_size: int = 128) -> None:
-        self.trunk = nn.Sequential(
-            nn.Linear(input_size(pits), hidden_size),
-            nn.ReLU(),
-            nn.Linear(hidden_size, hidden_size),
-            nn.ReLU(),
-        )
-        self.policy_head = nn.Linear(hidden_size, pits)
-        self.value_head = nn.Sequential(nn.Linear(hidden_size, 1), nn.Tanh())
-
-    def forward(self, x):
-        features = self.trunk(x)
-        return self.policy_head(features), self.value_head(features).squeeze(-1)
-```
 
 ## Residual MLPs
 
@@ -144,12 +111,11 @@ x
 \rightarrow (p,v).
 $$
 
-Making the MLP wider gives it more capacity. Making it deeper can also help, but
-plain deep networks can become harder to optimize. Each layer must learn not
+Each layer must learn not
 only useful new features, but also how to preserve information that should pass
 through unchanged.
 
-A residual block gives the network an easier option: learn a correction to the
+Thus each layer is a residual block that learn a correction to the
 current representation. If the input to a block is $h$, the block computes:
 
 $$
@@ -224,19 +190,9 @@ class ResidualKalahNet(nn.Module):
         return self.policy_head(features), self.value_head(features).squeeze(-1)
 ```
 
-This is still an MLP. There is no attention mechanism and no convolution. The
-difference is that each hidden representation can flow around a block while the
-block learns an additive refinement.
+This is still an MLP. There is no attention mechanism and no convolution. 
 
-For Kalah, this is a natural next architecture before attention. The board is
-small, so the main need is not long-range perception over a large grid. The main
-need is a little more capacity for tactical interactions among pits, stores,
-captures, and extra turns.
-
-## Illegal Move Masking
-
-The network can assign a large logit to an empty pit. That is not a bug by
-itself; the evaluator masks illegal moves before search sees probabilities.
+As explained in the previous lesson, evaluator masks illegal moves before search sees probabilities.
 Masking means setting illegal moves to probability zero:
 
 ```python
@@ -246,16 +202,6 @@ for action in state.legal_actions():
 probs = torch.softmax(logits + mask, dim=0)
 ```
 
-Mathematically:
-
-$$
-p_\theta^{\text{legal}}(a \mid s) =
-\begin{cases}
-\frac{e^{\ell_a}}{\sum_{b \in \mathcal{A}(s)} e^{\ell_b}},
-& a \in \mathcal{A}(s), \\
-0, & a \notin \mathcal{A}(s).
-\end{cases}
-$$
 
 ## Practice
 

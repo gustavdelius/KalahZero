@@ -44,6 +44,7 @@ Code:
 ```python
 @dataclass(slots=True)
 class RandomAgent:
+    """Choose a legal move uniformly at random."""
     rng: random.Random | None = None
 
     def select_action(self, state: GameState) -> int:
@@ -59,7 +60,7 @@ many legal transitions.
 The greedy agent chooses the move with the best immediate store margin:
 
 $$
-a^\* =
+a^* =
 \arg\max_{a \in \mathcal{A}(s)}
 \left[
 \operatorname{store}_p(T(s,a)) -
@@ -71,6 +72,7 @@ Code:
 
 ```python
 def select_action(self, state: GameState) -> int:
+    """Choose the move with the best immediate store margin."""
     player = state.current_player
     return max(
         state.legal_actions(),
@@ -83,7 +85,7 @@ traps.
 
 ## Minimax Agent
 
-Minimax approximates $V_p^\*(s)$ with a depth limit $d$:
+Minimax approximates $V_p^*(s)$ with a depth limit $d$:
 
 $$
 \hat{V}_{p,d}(s) =

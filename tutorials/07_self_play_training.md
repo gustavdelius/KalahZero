@@ -9,12 +9,26 @@ training on the search results.
 Self-play means the current agent plays both sides. The games it generates are
 then used as training data for the next version of the same agent.
 
-One self-play game produces samples:
+A single self-play game lasts $T$ moves. At every move $t \in \{0, 1, \ldots,
+T-1\}$ the system records a training sample consisting of three things:
+
+- $s_t$ — the board state before the move,
+- $\pi_t$ — the search policy at that state: the visit-count distribution
+  produced by MCTS, which says how promising each move looked after lookahead,
+- $z_t$ — the final game outcome for the player who was to move at $s_t$
+  (either $+1$, $0$, or $-1$). This is not known until the game ends and is
+  filled in retrospectively.
+
+Collecting all $T$ samples gives the dataset for one game:
 
 $$
 \mathcal{D}_{\text{game}} =
 \{(s_t, \pi_t, z_t)\}_{t=0}^{T-1}.
 $$
+
+The network is then trained to make its own policy and value predictions match
+these targets: its policy output should resemble $\pi_t$ and its value output
+should resemble $z_t$. This is explained in detail in lessons 08 and 09.
 
 ## At Each Move
 
@@ -37,7 +51,7 @@ while not state.is_terminal():
     move_index += 1
 ```
 
-## Visit Counts Become Targets
+## Visit Counts Become Policy Target
 
 The target policy is:
 
@@ -129,11 +143,7 @@ less familiar starting state. After that, the usual AlphaZero loop takes over:
 search, store the visit-count policy, play a move, and later attach the final
 outcome.
 
-Use:
-
-```bash
-python scripts/train.py --resume checkpoints/overnight.pt --games 2500 --opening-plies 4
-```
+The number of random opening moves can be set with the `--opening-plies` argument to `train.py` and `evaluate.py`.
 
 The opening length can also be sampled uniformly from a range. If
 $k_{\min}=0$ and $k_{\max}=8$, then each self-play game chooses:
@@ -143,27 +153,13 @@ k \sim \operatorname{Uniform}\{0,1,\ldots,8\}.
 $$
 
 Then the trainer applies $k$ random legal opening moves before search-based
-self-play begins:
+self-play begins. This is set with `--opening-plies-min 0 --opening-plies-max 8`.
 
-```bash
-python scripts/train.py --resume checkpoints/overnight.pt --games 3000 \
-  --opening-plies-min 0 --opening-plies-max 8
-```
-
-This is especially useful when evaluation also uses random openings:
-
-```bash
-python scripts/evaluate.py --checkpoint-a checkpoints/overnight.pt --agent-b minimax \
-  --games 200 --simulations 100 --opening-plies 4
-```
 
 ## Mixed Starting Stones
 
-The original training runs use four stones per pit:
-
-$$
-\text{stones} = 4.
-$$
+Kalah can be played with either 4, 5 or 6 stones in each pit at the start of the game.
+This is set wtih the `--stones` argument to `train.py` and `evaluate.py`.
 
 To teach one network to handle several starting positions, the trainer can also
 sample the number of starting stones. For example:
@@ -173,28 +169,9 @@ c \sim \operatorname{Uniform}\{4,5,6\}.
 $$
 
 Then each self-play game starts from a new Kalah board with $c$ stones in every
-pit. The network input uses fixed count scales, so these starting boards remain
-distinct:
+pit. This can be set with `--stones-min 4 --stones-max 6`.
 
-$$
-\frac{4}{18},\quad \frac{5}{18},\quad \frac{6}{18}.
-$$
 
-That distinction matters because six-stone openings are longer and have
-different extra-turn and capture patterns.
-
-Use:
-
-```bash
-python scripts/train.py --resume checkpoints/residual_depth.pt --games 12000 \
-  --stones-min 4 --stones-max 6
-```
-
-You can still train an exact variant:
-
-```bash
-python scripts/train.py --resume checkpoints/residual_depth.pt --games 12000 --stones 6
-```
 
 ## Safe Interruption And Resume
 

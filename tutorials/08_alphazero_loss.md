@@ -14,7 +14,7 @@ $$
 the network predicts:
 
 $$
-f_\theta(s) = (p_\theta, v_\theta).
+f_\theta(s) = (p_\theta(\cdot \mid s), v_\theta(s)).
 $$
 
 The AlphaZero-style loss is:
@@ -29,7 +29,7 @@ $$
 
 ## Value Loss
 
-The value term is mean squared error, the average squared difference between a
+The value term is the mean squared error, the average squared difference between a
 prediction and its target. For one sample:
 
 $$
@@ -48,8 +48,7 @@ This teaches the network to predict who eventually wins.
 
 ## Policy Loss
 
-The policy target $\pi$ comes from Monte Carlo Tree Search (MCTS) visit counts,
-not from a human. The cross-entropy term is:
+The policy target $\pi$ comes from Monte Carlo Tree Search (MCTS) visit counts. The cross-entropy term is:
 
 $$
 \mathcal{L}_{\text{policy}}
@@ -64,17 +63,6 @@ would need to encode samples from $\pi$ using a code designed for $p_\theta$.
 Minimising it pushes the network's distribution towards the search-derived
 target.
 
-If search assigns most visits to action $2$, the network is trained to make
-action $2$ more likely next time. Search is therefore a policy improvement
-operator:
-
-$$
-p_\theta(\cdot \mid s)
-\xrightarrow{\text{MCTS}}
-\pi(\cdot \mid s)
-\xrightarrow{\text{training}}
-p_{\theta'}(\cdot \mid s).
-$$
 
 ## Regularization
 
@@ -95,6 +83,36 @@ samples but significant enough to prevent individual weights from growing
 arbitrarily large during long training runs.
 
 ## Batch Loss In Code
+
+Rather than computing the loss on one sample at a time, training averages over
+a **minibatch** of $B$ samples drawn randomly from the replay buffer:
+
+$$
+\mathcal{L}(\theta)
+=
+\frac{1}{B}
+\sum_{i=1}^{B}
+\left[
+(z_i - v_\theta(s_i))^2
+- \sum_a \pi_i(a)\log p_\theta(a \mid s_i)
+\right]
++ \lambda \lVert \theta \rVert_2^2.
+$$
+
+Averaging over a batch rather than a single sample has two benefits. First, the
+gradient estimate is less noisy: one game position might be unusual, but the
+average over many positions tends to point in a reliable direction. Second, modern
+hardware (GPUs) can process a batch of positions in parallel almost as fast as
+it can process one, so the cost per sample drops considerably.
+
+The choice of batch size $B$ is a practical tradeoff. A larger batch gives a
+smoother gradient estimate, which can allow a higher learning rate and faster
+convergence. But it also means more memory and more computation per step, and
+beyond a certain size the extra smoothness yields diminishing returns. In this
+codebase the default is $B = 64$, a common starting point for small networks
+training on CPU. If training on a GPU you might increase it to $256$ or $512$.
+If memory is tight, reduce it; learning still works with $B = 16$, just more
+noisily.
 
 The implementation computes a minibatch average:
 

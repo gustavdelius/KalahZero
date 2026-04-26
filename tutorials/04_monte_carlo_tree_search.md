@@ -12,52 +12,148 @@ game tree instead of expanding the whole thing.
 Minimax tries to evaluate every branch up to a fixed depth. MCTS instead spends
 more effort on moves that look promising.
 
-## Node Statistics
+## How MCTS Works
 
-For each edge $(s,a)$, MCTS stores:
+When estimating the value of a state, MCTS builds a search tree incrementally, one simulation at a time, for a chosen number of simulations. Each
+simulation is a single pass through three steps:
+
+1. **Selection.** Starting from the root, follow the most promising child at
+   each node until reaching a **leaf** — a node whose children have not yet
+   been added to the tree.
+2. **Expansion and evaluation.** Call the evaluator on the leaf node. The
+   evaluator returns two things at once: a **value** for the leaf (how good
+   this position looks for the player to move) and a **policy** over all
+   legal moves (how promising each child is before it has been visited).
+   The children are then created and added to the tree, each receiving its
+   policy probability as its `prior`.
+3. **Backup.** Carry the leaf's value back up through every node on the path
+   to the root, updating each node's visit count and value sum.
+
+The code mirrors that sequence:
+
+```python
+for _ in range(self.simulations):
+    path = self._select_path(root)
+    leaf = path[-1]
+    if leaf.state.is_terminal():
+        value = leaf.state.reward_for_player(leaf.state.current_player)
+    else:
+        _, value = self._expand(leaf, evaluator)
+    self._backup(path, value)
+```
+
+After many simulations, nodes on good lines have been visited many times and
+have high average values. Nodes on bad lines have been visited less. At the
+end of search, the root's visit counts tell us which moves search considered
+most promising — this distribution is used both to choose the move to play and
+as a training target for the neural network.
+
+
+## The Search Tree and Node Statistics
+
+The search tree is a network of `SearchNode` objects linked by Python
+references. The root of the search tree is the current game state — the position
+the agent is facing right now, not the opening position. If the game has
+reached move 15, the root is the board after 14 moves have been played.
+
+Each node owns a dictionary mapping action numbers to child nodes:
+
+```python
+children: dict[int, SearchNode]
+```
+
+The root's `children` contains one entry per legal action that has already been explored from the
+root. Each child has its own `children` for the moves explored one level
+deeper, and so on. Following `root.children[2].children[5]` reaches the state
+two moves deep: action 2 from the root, then action 5 from there.
+
+The action leading to a child is stored as the dictionary *key*, not inside the child node itself.
+Because each node has exactly one parent in a tree, the key already captures
+the incoming action — duplicating it inside the child would be redundant.
+
+The tree only exists for the duration of one `search()` call. After the agent
+picks its move, the tree is discarded and a fresh one is built on the next turn.
+
+Beyond the game state and children, each node also records statistics that
+accumulate as simulations pass through it:
 
 $$
-N(s,a) = \text{number of visits},
+N(s,a) = \text{how many simulations have passed through this child},
+$$
+$$
+W(s,a) = \text{sum of values those simulations returned},
 $$
 
-$$
-W(s,a) = \text{sum of backed-up values},
-$$
+Here $s$ is the state of the parent and $a$ is the action that led from the parent to the current node. From these statistics we can calculate a quality score:
 
 $$
-Q(s,a) = \frac{W(s,a)}{N(s,a)}.
+Q(s,a) = \frac{W(s,a)}{N(s,a)} = \text{mean value — how good action } a \text{ has looked so far}.
 $$
 
-In code, each child node stores these quantities:
 
 ```python
 @dataclass(slots=True)
 class SearchNode:
+    """One node in the MCTS tree, representing a single game state."""
     state: GameState
     prior: float
     visit_count: int = 0
     value_sum: float = 0.0
+    children: dict[int, SearchNode] = field(default_factory=dict)  # keyed by local action number
 
     @property
     def mean_value(self) -> float:
+        """Return the average backed-up value, or 0 if the node has never been visited."""
         if self.visit_count == 0:
             return 0.0
         return self.value_sum / self.visit_count
 ```
 
-The `prior` field in this code is a move probability supplied before search has
-many visits. Plain UCT does not need it, but the next lesson's PUCT rule does.
+The `prior` is a move probability supplied by the evaluator when the node is
+first created, before search has accumulated any visit counts. Plain UCT does
+not need it, but the next lesson's PUCT rule does.
 
-Note that the action $a$ is not stored inside `SearchNode`. In a tree, each
-child is reachable by exactly one action from its parent, so the action is
-stored as the key in the parent's children dictionary (for example,
-`children: dict[int, SearchNode]`). Putting the action inside the child node
-would be redundant.
+## The Evaluator
+
+The evaluator is the component that MCTS calls during expansion to assess a
+leaf node. It takes a game state and returns two things:
+
+$$
+\text{evaluator}(s) = (\text{policy},\ \text{value}),
+$$
+
+where the **policy** is a probability distribution over the $m$ pit indices
+(one entry per possible action, including illegal ones that will be masked
+later) and the **value** is a single number in $[-1, 1]$ estimating how good
+the position is for the player to move.
+
+In code, any object that implements this interface can serve as an evaluator:
+
+```python
+class Evaluator(Protocol):
+    def evaluate(self, state: GameState) -> tuple[list[float], float]:
+        """Return (policy, value) from the current player's perspective."""
+```
+
+This design means MCTS does not need to know what is inside the evaluator.
+The search logic is the same whether the evaluator is a neural network, a
+random-rollout estimate, or a simple uniform guess.
+
+Three evaluators are available in this codebase:
+
+- **`UniformEvaluator`** — assigns equal probability to every legal move and
+  returns value $0$. Useful for testing MCTS mechanics before any network
+  exists.
+- **`RolloutEvaluator`** — estimates the value by playing the game out
+  randomly several times and averaging the results. This is the classical
+  pre-AlphaZero approach.
+- **`NeuralEvaluator`** — runs the trained neural network. This is what the
+  full AlphaZero system uses, and what the next lessons build towards.
 
 ## UCT Selection
 
 UCT stands for Upper Confidence bounds applied to Trees. It is the rule that
-decides which child node to visit next. Classic UCT chooses the child with the
+decides which child node to select as the most promising at each leaf. Classic UCT chooses the child with the
 largest score:
 
 $$
@@ -76,6 +172,23 @@ budget increases, encouraging the agent to keep revisiting uncertain moves.
 
 The exploitation term $Q(s,a)$ prefers moves that have worked. The
 exploration term is large when $N(s,a)$ is small.
+
+The UCT formula and the evaluator's policy play entirely different roles and
+should not be confused:
+
+- The **evaluator's policy** $P(s,a)$ is consulted once, at expansion time,
+  to set the `prior` of each newly created child node. It is the evaluator's
+  initial opinion about which moves look promising before any visits.
+- The **UCT selection rule** is applied at every node during every simulation's
+  selection phase. It uses only $Q(s,a)$ and $N(s,a)$ — the statistics
+  accumulated so far — and completely ignores the `prior`.
+
+With plain UCT the policy only affects which priors are stored on child nodes,
+but those priors are never read back. This means UCT treats the evaluator
+purely as a value estimator and discards its move-probability output.
+AlphaZero's PUCT rule, introduced in the next lesson, changes this: it
+multiplies the exploration term by the prior $P(s,a)$, so moves the network
+considers promising get a larger exploration bonus early in search.
 
 ## Where UCT Comes From
 
@@ -183,27 +296,6 @@ else:
 return q + exploration
 ```
 
-## The Four Phases
-
-One simulation consists of:
-
-$$
-\text{selection} \rightarrow \text{expansion} \rightarrow
-\text{evaluation} \rightarrow \text{backup}.
-$$
-
-The code mirrors that sequence:
-
-```python
-for _ in range(self.simulations):
-    path = self._select_path(root)
-    leaf = path[-1]
-    if leaf.state.is_terminal():
-        value = leaf.state.reward_for_player(leaf.state.current_player)
-    else:
-        _, value = self._expand(leaf, evaluator)
-    self._backup(path, value)
-```
 
 ## Backup and Player Perspective
 

@@ -86,7 +86,7 @@ self.assertGreater(result.policy[2] + result.policy[5], 0.0)
 For terminal states, the correct value is known:
 
 $$
-v^\*(s) = z_{\operatorname{player}(s)}(s).
+v^*(s) = z_{\operatorname{player}(s)}(s).
 $$
 
 During debugging, inspect whether the value head gives sensible signs for

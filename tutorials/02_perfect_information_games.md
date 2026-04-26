@@ -52,7 +52,24 @@ At a terminal state $s_n$, the reward is $z_p(s_n)$ for player $p$.
 The value of a nonterminal state is the outcome under some rule for choosing
 future moves.
 
-Under perfect play, the value for player $p$ is:
+## The Value Function
+
+How good is a position for player $p$? To answer that we need to assume
+something about how both players will behave in the future. The strongest
+possible assumption is **perfect play**: both players always choose the move
+that is best for themselves.
+
+Starting from that assumption we can define $V_p^*(s)$ — the value of state
+$s$ for player $p$ under perfect play — by working backwards from the end
+of the game:
+
+- If the game is already over, the value is just the known reward: $V_p^*(s) = z_p(s)$.
+- If it is player $p$'s turn, player $p$ will pick the move that leads to the
+  highest value for themselves: $V_p^*(s) = \max_a V_p^*(T(s,a))$.
+- If it is the opponent's turn, the opponent will pick the move that leads to
+  the *lowest* value for player $p$: $V_p^*(s) = \min_a V_p^*(T(s,a))$.
+
+Writing all three cases together:
 
 $$
 V_p^*(s) =
@@ -63,8 +80,34 @@ z_p(s), & \operatorname{terminal}(s), \\
 \end{cases}
 $$
 
-The max line says "I choose my best move." The min line says "my opponent
-chooses the move worst for me."
+The asterisk in $V_p^*$ is a conventional marker meaning "optimal" — the maximum value
+achievable against a perfect opponent. The alternating max and min is why this
+is called **minimax**: the current player maximises, the opponent minimises.
+
+The three cases map directly to code in `MinimaxAgent._search`:
+
+```python
+def _search(self, state, depth, perspective, ...):
+    if state.is_terminal():                        # terminal case: known reward
+        return state.reward_for_player(perspective)
+    if depth <= 0:
+        return self._evaluate(state, perspective)  # depth limit: use heuristic
+
+    if state.current_player == perspective:        # own turn: maximise
+        value = -math.inf
+        for action in state.legal_actions():
+            value = max(value, self._search(state.apply(action), depth - 1, perspective, ...))
+        return value
+
+    value = math.inf                               # opponent's turn: minimise
+    for action in state.legal_actions():
+        value = min(value, self._search(state.apply(action), depth - 1, perspective, ...))
+    return value
+```
+
+The `...` placeholders hide the alpha-beta pruning arguments, which are a
+speed optimisation covered later. The core structure is just the three cases
+above.
 
 ## Depth-Limited Minimax
 
@@ -129,6 +172,7 @@ Code:
 
 ```python
 def _evaluate(self, state: GameState, perspective: int) -> float:
+    """Heuristic score when the depth limit is reached."""
     own_pits = sum(state.pits_for(perspective))
     other_pits = sum(state.pits_for(1 - perspective))
     store_margin = state.store_for(perspective) - state.store_for(1 - perspective)
@@ -167,6 +211,7 @@ That is exactly what `select_action` does:
 
 ```python
 def select_action(self, state: GameState) -> int:
+    """Return the action with the highest minimax value at the configured depth."""
     perspective = state.current_player
     best_action = state.legal_actions()[0]
     best_value = -math.inf
@@ -208,7 +253,7 @@ return value
 
 ## Alpha-Beta Pruning
 
-Plain minimax expands roughly:
+In plain minimax the number of nodes to explore to depth $d$ is roughly:
 
 $$
 1 + b + b^2 + \cdots + b^d
@@ -218,7 +263,7 @@ $$
 
 where $b$ is the branching factor (the number of legal moves per position;
 note this is a different use of the letter $b$ from the board vector in the
-previous lesson) and $d$ is depth.
+previous lesson).
 
 If $b=6$ and $d=8$, this is already more than $2$ million nodes in the
 worst case. Alpha-beta pruning gives the same minimax answer while skipping

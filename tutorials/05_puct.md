@@ -7,24 +7,36 @@ previous lesson. PUCT is the AlphaZero-style version of that rule. The "P" is
 often read as "predictor" or "prior" because the neural network predicts which
 moves deserve attention before search has tried them much.
 
-This lesson explains the key AlphaZero move: replacing random rollout guidance
-with a neural network that supplies policy priors and value estimates. A rollout
-is a simulated continuation of the game used to estimate who is likely to win.
-A policy prior is a probability assigned to a move before the search has
-gathered many visit counts for that move.
+The previous lesson introduced the `Evaluator` interface: a component that
+MCTS calls on each newly expanded leaf to obtain a policy (move probabilities)
+and a value (expected outcome). The lesson showed three concrete evaluators —
+uniform, rollout-based, and neural — and noted that MCTS does not care which
+one is used. This lesson is about what changes when the evaluator is a trained
+neural network, and why that change is significant enough to modify the UCT
+selection rule itself.
 
-The network represents:
+With a `RolloutEvaluator`, the policy returned is always uniform — every legal
+move gets equal probability, because the evaluator has no opinion about which
+moves are better before simulating them. The value is estimated by playing out
+the game randomly, which is slow and noisy.
+
+A neural network replaces both of those weaknesses at once. Given a board
+position, it returns in a single forward pass:
 
 $$
-f_\theta(s) = (P_\theta(s), v_\theta(s)).
+f_\theta(s) = (p_\theta(\cdot \mid s), v_\theta(s)),
 $$
 
-Here $\theta$ denotes the learnable parameters of the neural network — the
-collection of all weights and biases that training adjusts. The subscript
-$\theta$ is a reminder that the function's behaviour depends on those
-parameters. $P_\theta(s)$ is a probability distribution over moves
-(so $P_\theta(s,a)$ is the probability assigned to action $a$ from state $s$),
-and $v_\theta(s) \in [-1,1]$ is the predicted outcome for the player to move.
+where $\theta$ denotes the learnable parameters (all weights and biases that
+training adjusts). $P_\theta(s)$ without an action argument denotes the 
+probability distribution over the actions — a vector with one entry $p_\theta(a\mid s)$ for each legal move $a$. $v_\theta(s) \in [-1,1]$ is the network's prediction of the final game
+outcome for the player who is about to move from state $s$ — that is,
+the player who will now choose an action. A value near $+1$ means the network
+expects that player to win; near $-1$ means it expects them to lose. The
+prediction is made before any action is taken from $s$. Both outputs are available immediately, without any random
+playouts. The policy prior is now informative — early in search it can
+concentrate attention on moves the network considers promising, before visit
+counts are large enough to be reliable on their own.
 
 ## From UCT To PUCT
 
@@ -94,7 +106,8 @@ bad; the search should remain well-defined.
 
 ## Root Dirichlet Noise
 
-During self-play, AlphaZero deliberately perturbs the root prior:
+During self-play, AlphaZero deliberately perturbs the priors of the root
+node's children:
 
 $$
 P'(s,a) =
@@ -103,10 +116,21 @@ P'(s,a) =
 \eta \sim \operatorname{Dirichlet}(\alpha).
 $$
 
+This perturbation is applied only to the root — the node representing the
+current game state — immediately after it is expanded, before any simulations
+run. It modifies the priors of the root's direct children, which affects how
+the PUCT formula scores those children during selection. Nodes deeper in the
+tree are expanded normally and receive unperturbed priors from the network.
+The noise therefore only influences which first move each simulation explores;
+once a simulation descends past the root, it follows the unmodified network
+priors.
+
 A Dirichlet distribution is a probability distribution over probability
 vectors. Here it produces a random legal-move distribution $\eta$ that can be
-mixed into the network's prior. This encourages opening diversity. Without it,
-self-play can collapse into a small set of familiar games.
+mixed into the network's prior. This encourages opening diversity: without it,
+every self-play game would begin with the same first moves, causing the replay
+buffer to fill with near-identical positions and starving the network of
+variety.
 
 Code:
 
@@ -122,22 +146,28 @@ for action, sample in zip(actions, noise):
 
 ## Search Policy
 
-After $K$ simulations, AlphaZero does not train on the single chosen action.
-It trains on visit counts:
+After $K$ simulations the root's children have accumulated visit counts
+$N(s,a)$. These are normalised into a probability distribution:
 
 $$
 \pi(a \mid s) =
 \frac{N(s,a)}{\sum_{b \in \mathcal{A}(s)} N(s,b)}.
 $$
 
-This $\pi$ is a stronger target than the raw network prior because it includes
-lookahead.
+This distribution $\pi$ is the output of the search. It is richer than the
+raw network prior $P_\theta(s,a)$: moves that looked good under lookahead
+received many visits and so have high $\pi$, while moves that looked poor
+received few visits regardless of what the network initially thought of them.
 
 ```python
 total_visits = sum(visits)
 policy = [visit / total_visits if total_visits else 0.0 for visit in visits]
 return SearchResult(root=root, visits=visits, policy=policy, value=root.mean_value)
 ```
+
+This `policy` field in `SearchResult` is what callers use to select the move
+to play (via `select_action`). Its role as a training signal for the network
+is discussed in lesson 07.
 
 ## Practice
 
