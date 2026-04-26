@@ -19,8 +19,12 @@ $$
 f_\theta(s) = (P_\theta(s), v_\theta(s)).
 $$
 
-Here $P_\theta(s)$ is a probability distribution over moves and
-$v_\theta(s) \in [-1,1]$ is the predicted outcome for the player to move.
+Here $\theta$ denotes the learnable parameters of the neural network — the
+collection of all weights and biases that training adjusts. The subscript
+$\theta$ is a reminder that the function's behaviour depends on those
+parameters. $P_\theta(s)$ is a probability distribution over moves
+(so $P_\theta(s,a)$ is the probability assigned to action $a$ from state $s$),
+and $v_\theta(s) \in [-1,1]$ is the predicted outcome for the player to move.
 
 ## From UCT To PUCT
 

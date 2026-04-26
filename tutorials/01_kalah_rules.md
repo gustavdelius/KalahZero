@@ -33,8 +33,10 @@ $$
 $$
 
 Player $0$'s pits are indices $0,\ldots,5$. Player $1$'s pits are
-indices $7,\ldots,12$. A move is represented as a local pit number
-$a \in \{0,\ldots,5\}$ for the player to move.
+indices $7,\ldots,12$. We write $P_p$ for the set of pit indices belonging to
+player $p$, so $P_0 = \{0,1,2,3,4,5\}$ and $P_1 = \{7,8,9,10,11,12\}$.
+A move is represented as a local pit number $a \in \{0,\ldots,5\}$ for the
+player to move.
 
 Here is the corresponding code:
 
@@ -51,7 +53,9 @@ class GameState:
         return cls(tuple(board), current_player=PLAYER_0, pits=pits)
 ```
 
-The state is immutable because search algorithms reuse states constantly. If
+The `frozen=True` argument to `@dataclass` makes every instance immutable: any
+attempt to assign to a field after construction raises an error. This is the
+right choice here because search algorithms reuse states constantly. If
 `apply` mutated a board in place, one branch of the search tree could corrupt
 another branch.
 

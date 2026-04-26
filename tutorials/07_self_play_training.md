@@ -47,17 +47,30 @@ $$
 {\sum_b N(s_t,b)^{1/\tau}},
 $$
 
-where $\tau$ is the temperature. Temperature is a knob that controls how random
-the action choice is. In the code, temperature is used when selecting the played
-action. The stored policy remains the normalized visit distribution returned by
-search.
+where $\tau > 0$ is the **temperature**. It controls how random the action
+choice is.
 
-When $\tau = 1$, actions are sampled roughly according to visits. As
-$\tau \to 0$, selection becomes greedy:
+When $\tau = 1$ the formula reduces to plain visit-count proportions, so each
+action is sampled with probability proportional to how many visits it received.
+When $\tau < 1$ the exponent $1/\tau > 1$ amplifies differences: actions with
+more visits get disproportionately higher probability. As $\tau \to 0$ the most
+visited action gets essentially all the probability mass, which is equivalent to
+choosing greedily:
 
 $$
 a_t = \arg\max_a N(s_t,a).
 $$
+
+In the code the temperature is set to $1$ for the first `temperature_moves`
+moves of each game and then to $0$ (greedy) for the rest. Early in the game
+this encourages variety in the training data — sampling proportionally to
+visits means the agent occasionally tries second-best moves, producing
+different game continuations. Late in the game greedy selection makes the
+match outcome more decisive and the resulting value target cleaner.
+
+In the code, temperature is used only when selecting the played action $a_t$.
+The stored policy $\pi_t$ is always the raw normalised visit distribution
+returned by search, regardless of temperature.
 
 ## Final Outcome Becomes Value Target
 

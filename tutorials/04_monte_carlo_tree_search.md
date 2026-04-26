@@ -48,6 +48,12 @@ class SearchNode:
 The `prior` field in this code is a move probability supplied before search has
 many visits. Plain UCT does not need it, but the next lesson's PUCT rule does.
 
+Note that the action $a$ is not stored inside `SearchNode`. In a tree, each
+child is reachable by exactly one action from its parent, so the action is
+stored as the key in the parent's children dictionary (for example,
+`children: dict[int, SearchNode]`). Putting the action inside the child node
+would be redundant.
+
 ## UCT Selection
 
 UCT stands for Upper Confidence bounds applied to Trees. It is the rule that
@@ -62,6 +68,11 @@ Q(s,a)
 \frac{\log(N(s)+2)}{1 + N(s,a)}
 }.
 $$
+
+Here $N(s) = \sum_{a \in \mathcal{A}(s)} N(s,a)$ is the total number of times
+the parent state $s$ has been visited across all simulations. It appears in
+the numerator so that the exploration bonus grows slowly as the total search
+budget increases, encouraging the agent to keep revisiting uncertain moves.
 
 The exploitation term $Q(s,a)$ prefers moves that have worked. The
 exploration term is large when $N(s,a)$ is small.
@@ -195,6 +206,11 @@ for _ in range(self.simulations):
 ```
 
 ## Backup and Player Perspective
+
+Kalah is a two-player zero-sum game: every stone gained by one player is lost
+by the other, so what is good for one player is equally bad for the other.
+That means if a position has value $+0.8$ for the player to move, it has value
+$-0.8$ for the opponent.
 
 A leaf value is always from the leaf state's current player's perspective. When
 the path crosses to the other player, the sign must flip:

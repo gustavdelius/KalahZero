@@ -160,6 +160,9 @@ a^*
 \hat{V}_{p,d-1}(T(s,a)).
 $$
 
+Here $\arg\max$ means "the argument that maximises": $a^*$ is the specific
+action $a$ for which $\hat{V}_{p,d-1}(T(s,a))$ is largest.
+
 That is exactly what `select_action` does:
 
 ```python
@@ -213,7 +216,9 @@ $$
 = O(b^d),
 $$
 
-where $b$ is branching factor and $d$ is depth.
+where $b$ is the branching factor (the number of legal moves per position;
+note this is a different use of the letter $b$ from the board vector in the
+previous lesson) and $d$ is depth.
 
 If $b=6$ and $d=8$, this is already more than $2$ million nodes in the
 worst case. Alpha-beta pruning gives the same minimax answer while skipping

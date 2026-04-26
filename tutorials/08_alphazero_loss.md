@@ -57,6 +57,13 @@ $$
 - \sum_a \pi(a \mid s)\log p_\theta(a \mid s).
 $$
 
+This is the **cross-entropy** between the target distribution $\pi$ and the
+network's distribution $p_\theta$. Its minimum is zero, achieved when
+$p_\theta = \pi$ everywhere. Intuitively, it measures how many extra bits you
+would need to encode samples from $\pi$ using a code designed for $p_\theta$.
+Minimising it pushes the network's distribution towards the search-derived
+target.
+
 If search assigns most visits to action $2$, the network is trained to make
 action $2$ more likely next time. Search is therefore a policy improvement
 operator:
@@ -82,7 +89,10 @@ $$
 \lambda \sum_i \theta_i^2.
 $$
 
-It discourages unnecessarily large weights.
+It discourages unnecessarily large weights. In this codebase the default is
+$\lambda = 10^{-4}$, small enough that the regulariser barely affects well-fit
+samples but significant enough to prevent individual weights from growing
+arbitrarily large during long training runs.
 
 ## Batch Loss In Code
 

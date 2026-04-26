@@ -36,8 +36,12 @@ $$
 
 where:
 
-- $o_i$ are the current player's pit stones.
-- $r_i$ are the opponent's pit stones.
+- $o_i$ are the current player's pit stones, ordered from pit $0$ to pit $m-1$.
+- $r_i$ are the opponent's pit stones, listed in **reverse** order
+  ($r_0$ corresponds to the opponent's pit $m-1$, $r_{m-1}$ to pit $0$).
+  This reversal makes the encoding symmetric: pit $i$ for the current player
+  sits opposite pit $i$ for the opponent in the input vector, just as it does
+  physically on the board.
 - $O$ is the current player's store.
 - $R$ is the opponent's store.
 - $P$ is a fixed pit scale. In the code, $P=18$.
@@ -154,8 +158,9 @@ $$
 h + F_\phi(h),
 $$
 
-where $F_\phi$ is a small neural network, often two linear layers with a ReLU
-between them:
+where $F_\phi$ is a small neural network with its own learnable parameters
+$\phi$ (the weights of the two linear layers inside the block), often two
+linear layers with a ReLU between them:
 
 $$
 F_\phi(h)

@@ -57,9 +57,10 @@ $$
 
 ## Confidence
 
-A win rate is an estimate. A Bernoulli trial is a random experiment with two
-outcomes, such as win/loss if we ignore draws. If we model each game this way
-with win probability $p$, then the standard error of $\hat{p}$ is approximately:
+A win rate is an estimate. A **Bernoulli trial** is a random experiment with
+exactly two outcomes — here "win" and "not win" (lumping draws with losses).
+If we model each game as an independent Bernoulli trial with win probability
+$p$, then after $n$ games the standard error of $\hat{p}$ is approximately:
 
 $$
 \operatorname{SE}(\hat{p})

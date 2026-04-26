@@ -35,6 +35,10 @@ $$
 \end{cases}
 $$
 
+Here $|\mathcal{A}(s)|$ denotes the number of legal actions in state $s$
+(the cardinality of the set $\mathcal{A}(s)$). Each legal move receives equal
+probability.
+
 Code:
 
 ```python
@@ -109,6 +113,10 @@ For $n$ games, the observed win rate is:
 $$
 \hat{p} = \frac{w}{n}.
 $$
+
+The hat on $\hat{p}$ is a standard statistics convention meaning "estimated
+from data." It distinguishes the measured fraction from the true but unknown
+win probability $p$.
 
 The arena alternates starting positions so first-player advantage is less
 misleading:
