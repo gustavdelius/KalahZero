@@ -157,7 +157,15 @@ def main() -> None:
     elif args.stones != 4:
         search_info += f", stones={args.stones}"
     if args.batched_mcts:
+        from kalah_zero.batched_mcts import BatchedMCTS
+
+        effective_batch_size = BatchedMCTS(
+            simulations=args.simulations,
+            batch_size=args.eval_batch_size,
+        )._effective_batch_size()
         search_info += f", batched_mcts=True, eval_batch_size={args.eval_batch_size}"
+        if effective_batch_size != args.eval_batch_size:
+            search_info += f", effective_batch_size={effective_batch_size}"
     if args.fast_game:
         search_info += ", fast_game=True"
     using_opening_range = args.opening_plies_min is not None or args.opening_plies_max is not None

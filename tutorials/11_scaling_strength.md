@@ -93,6 +93,21 @@ $$
 B = \texttt{eval\_batch\_size}.
 $$
 
+The requested batch size should not be too large compared with the number of
+simulations. If $B$ is large and the search only has $N$ simulations, the tree
+is expanded in too few waves. For example, with $N=100$ and $B=32$, many leaves
+are selected before the search has learned from earlier evaluations. The code
+therefore caps the effective batch size at approximately:
+
+$$
+B_{\text{effective}}
+=
+\min(B, \lfloor \sqrt{N} \rfloor).
+$$
+
+This keeps CPU batching useful while preserving enough selection/evaluation
+waves for the tree to react to new value estimates.
+
 Use it during training with:
 
 ```bash

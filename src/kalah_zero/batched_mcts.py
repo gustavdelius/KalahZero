@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 import random
 from dataclasses import dataclass, field
 from typing import Protocol, cast
@@ -39,7 +40,7 @@ class BatchedMCTS(MCTS):
 
         completed = 0
         while completed < self.simulations:
-            limit = min(max(1, self.batch_size), self.simulations - completed)
+            limit = min(self._effective_batch_size(), self.simulations - completed)
             pending: list[list[SearchNode]] = []
             pending_states: list[GameState] = []
 
@@ -102,3 +103,18 @@ class BatchedMCTS(MCTS):
     def _remove_virtual_visit(self, path: list[SearchNode]) -> None:
         for node in path:
             node.visit_count -= 1
+
+    def _effective_batch_size(self) -> int:
+        """Cap batches so search still grows over many selection/evaluation waves.
+
+        Batched MCTS is approximate: selected leaves are evaluated only after a
+        whole batch has been collected. If the batch is too large relative to
+        the simulation budget, the search becomes very stale and shallow. A
+        square-root cap keeps CPU batching useful while preserving enough waves
+        for the tree to react to new values.
+        """
+
+        requested = max(1, self.batch_size)
+        if self.simulations <= 1:
+            return 1
+        return min(requested, max(1, int(math.sqrt(self.simulations))))

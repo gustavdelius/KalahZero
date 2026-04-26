@@ -162,6 +162,24 @@ class AgentAndMCTSTests(unittest.TestCase):
 
         self.assertGreater(evaluator.batch_calls, 0)
 
+    def test_batched_mcts_caps_large_batches_relative_to_simulations(self) -> None:
+        class RecordingEvaluator(UniformEvaluator):
+            def __init__(self) -> None:
+                self.batch_sizes: list[int] = []
+
+            def evaluate_batch(self, states: list[GameState]) -> list[tuple[list[float], float]]:
+                self.batch_sizes.append(len(states))
+                return [self.evaluate(state) for state in states]
+
+        evaluator = RecordingEvaluator()
+        mcts = BatchedMCTS(simulations=100, batch_size=32)
+
+        result = mcts.search(GameState.new_game(), evaluator)
+
+        self.assertEqual(sum(result.visits), 100)
+        self.assertTrue(evaluator.batch_sizes)
+        self.assertLessEqual(max(evaluator.batch_sizes), 10)
+
 
 if __name__ == "__main__":
     unittest.main()
