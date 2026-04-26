@@ -7,8 +7,10 @@
   const DEFAULT_SIMULATIONS = 120;
   const C_PUCT = 1.5;
   const FIXED_COUNT_ENCODING = "fixed_count_v1";
+  const FIXED_MARGIN_TOTAL_ENCODING = "fixed_margin_total_v1";
   const DEFAULT_PIT_STONE_SCALE = 18;
   const DEFAULT_STORE_STONE_SCALE = 72;
+  const DEFAULT_TOTAL_STONE_SCALE = 72;
 
   let evaluatorPromise = null;
 
@@ -149,6 +151,21 @@
     const player = state.currentPlayer;
     const opponent = 1 - player;
     const features = [];
+    if (config.encoding_version === FIXED_MARGIN_TOTAL_ENCODING) {
+      const pitScale = Number(config.pit_stone_scale || DEFAULT_PIT_STONE_SCALE);
+      const storeScale = Number(config.store_stone_scale || DEFAULT_STORE_STONE_SCALE);
+      const totalScale = Number(config.total_stone_scale || DEFAULT_TOTAL_STONE_SCALE);
+      for (const value of pitsFor(state, player)) features.push(value / pitScale);
+      const opponentPits = pitsFor(state, opponent);
+      for (let i = opponentPits.length - 1; i >= 0; i -= 1) features.push(opponentPits[i] / pitScale);
+      const storeMargin = state.board[storeIndex(player)] - state.board[storeIndex(opponent)];
+      const totalStones = state.board.reduce((sum, value) => sum + value, 0);
+      features.push(storeMargin / storeScale);
+      features.push(totalStones / totalScale);
+      features.push(1);
+      return new Float32Array(features);
+    }
+
     if (config.encoding_version === FIXED_COUNT_ENCODING) {
       const pitScale = Number(config.pit_stone_scale || DEFAULT_PIT_STONE_SCALE);
       const storeScale = Number(config.store_stone_scale || DEFAULT_STORE_STONE_SCALE);

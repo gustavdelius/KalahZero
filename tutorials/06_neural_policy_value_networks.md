@@ -28,8 +28,8 @@ x(s) =
 \left[
 \frac{o_0}{P},\ldots,\frac{o_{m-1}}{P},
 \frac{r_{m-1}}{P},\ldots,\frac{r_0}{P},
-\frac{O}{B},
-\frac{R}{B},
+\frac{O-R}{B},
+\frac{T}{C},
 1
 \right],
 $$
@@ -44,17 +44,34 @@ where:
   physically on the board.
 - $O$ is the current player's store.
 - $R$ is the opponent's store.
+- $O-R$ is the store margin from the current player's perspective.
+- $T$ is the total number of stones still represented on the board and in the
+  stores.
 - $P$ is a fixed pit scale. In the code, $P=18$.
-- $B$ is a fixed store scale. In the code, $B=72$.
+- $B$ is a fixed store-margin scale. In the code, $B=72$.
+- $C$ is a fixed total-stone scale. In the code, $C=72$.
 
 The scales are fixed constants, that transform the
 network inputs into a comfortable numeric range.
+
+The two store counts are not encoded separately. For choosing a move, adding
+the same number of stones to both stores does not change the store advantage.
+What matters is the margin:
+
+$$
+M = O - R.
+$$
+
+The total number of stones $T$ is included separately because positions with
+different starting stone counts can have different dynamics even when their
+relative pit pattern is similar.
 
 Code:
 
 ```python
 PIT_STONE_SCALE = 18.0
 STORE_STONE_SCALE = 72.0
+TOTAL_STONE_SCALE = 72.0
 
 
 def encode_features(state: GameState) -> list[float]:
@@ -62,11 +79,9 @@ def encode_features(state: GameState) -> list[float]:
     opponent = 1 - player
     own = [stones / PIT_STONE_SCALE for stones in state.pits_for(player)]
     other = [stones / PIT_STONE_SCALE for stones in reversed(state.pits_for(opponent))]
-    stores = [
-        state.store_for(player) / STORE_STONE_SCALE,
-        state.store_for(opponent) / STORE_STONE_SCALE,
-    ]
-    return own + other + stores + [1.0]
+    store_margin = (state.store_for(player) - state.store_for(opponent)) / STORE_STONE_SCALE
+    total_stones = state.total_stones / TOTAL_STONE_SCALE
+    return own + other + [store_margin, total_stones, 1.0]
 ```
 
 The final $1$ is a bias-like feature. Neural layers already have biases, but

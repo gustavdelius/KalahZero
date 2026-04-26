@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 
 import _path  # noqa: F401
-from kalah_zero.encoding import ENCODING_VERSION, PIT_STONE_SCALE, STORE_STONE_SCALE
+from kalah_zero.encoding import ENCODING_VERSION, PIT_STONE_SCALE, STORE_STONE_SCALE, TOTAL_STONE_SCALE
 from kalah_zero.network import load_checkpoint
 
 
@@ -40,6 +40,7 @@ def main() -> None:
             "encoding_version": encoding_version,
             "pit_stone_scale": PIT_STONE_SCALE if encoding_version == ENCODING_VERSION else None,
             "store_stone_scale": STORE_STONE_SCALE if encoding_version == ENCODING_VERSION else None,
+            "total_stone_scale": TOTAL_STONE_SCALE if encoding_version == ENCODING_VERSION else None,
         },
         "state_dict": {
             name: tensor_payload(tensor)

@@ -8,6 +8,7 @@ from kalah_zero.encoding import (
     ENCODING_VERSION,
     PIT_STONE_SCALE,
     STORE_STONE_SCALE,
+    TOTAL_STONE_SCALE,
     encode_features,
     input_size,
 )
@@ -36,14 +37,24 @@ class EncodingAndTrainingTests(unittest.TestCase):
         self.assertNotEqual(four_stone, five_stone)
         self.assertNotEqual(five_stone, six_stone)
 
-    def test_encode_features_scale_stores_separately(self) -> None:
+    def test_encode_features_include_store_margin_and_total_stones(self) -> None:
         state = GameState((0, 2, 3, 4, 5, 6, 18, 1, 2, 3, 4, 5, 6, 30), current_player=0)
 
         features = encode_features(state)
 
         self.assertEqual(features[6], 6 / PIT_STONE_SCALE)
-        self.assertEqual(features[12], 18 / STORE_STONE_SCALE)
-        self.assertEqual(features[13], 30 / STORE_STONE_SCALE)
+        self.assertEqual(features[12], (18 - 30) / STORE_STONE_SCALE)
+        self.assertEqual(features[13], sum(state.board) / TOTAL_STONE_SCALE)
+
+    def test_store_encoding_depends_on_margin_not_absolute_store_counts(self) -> None:
+        state_a = GameState((4, 4, 4, 4, 4, 4, 10, 4, 4, 4, 4, 4, 4, 7), current_player=0)
+        state_b = GameState((4, 4, 4, 4, 4, 4, 20, 4, 4, 4, 4, 4, 4, 17), current_player=0)
+
+        features_a = encode_features(state_a)
+        features_b = encode_features(state_b)
+
+        self.assertEqual(features_a[12], features_b[12])
+        self.assertNotEqual(features_a[13], features_b[13])
 
     def test_self_play_generates_training_samples(self) -> None:
         config = TrainConfig(simulations=5, stones=1, temperature_moves=2)
