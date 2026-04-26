@@ -23,7 +23,7 @@
   let startingStones = DEFAULT_STONES;
   let state = newGame();
   let humanPlayer = 0;
-  let opponent = "greedy";
+  let opponent = "trained";
   let history = [];
   let busy = false;
   let animating = false;

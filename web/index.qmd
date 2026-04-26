@@ -59,9 +59,9 @@ format:
       <label>
         Opponent
         <select id="opponent">
-          <option value="greedy" selected>Greedy</option>
+          <option value="greedy">Greedy</option>
           <option value="random">Random</option>
-          <option value="trained">Trained agent</option>
+          <option value="trained" selected>Trained agent</option>
         </select>
       </label>
       <label id="agent-simulations-control" class="hidden">
