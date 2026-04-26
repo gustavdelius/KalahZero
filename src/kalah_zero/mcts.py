@@ -3,7 +3,7 @@ from __future__ import annotations
 import math
 import random
 from dataclasses import dataclass, field
-from typing import Protocol
+from typing import Callable, Protocol
 
 from kalah_zero.game import GameState
 
@@ -143,14 +143,24 @@ class MCTS:
     dirichlet_epsilon: float = 0.25        # weight of noise vs. prior at the root
     rng: random.Random = field(default_factory=random.Random)
 
-    def search(self, state: GameState, evaluator: Evaluator) -> SearchResult:
-        """Run MCTS from `state` and return the visit distribution over actions."""
+    def search(
+        self,
+        state: GameState,
+        evaluator: Evaluator,
+        callback: Callable[[SearchNode, int, list[SearchNode]], None] | None = None,
+    ) -> SearchResult:
+        """Run MCTS from `state` and return the visit distribution over actions.
+
+        If `callback` is provided it is called after every simulation with the
+        root node, the current simulation number (1-based), and the path of
+        nodes visited during that simulation (root first, leaf last).
+        """
         root = SearchNode(state=state, prior=1.0)
         self._expand(root, evaluator)
         if self.dirichlet_alpha is not None and root.children:
             self._add_root_noise(root)
 
-        for _ in range(self.simulations):
+        for i in range(self.simulations):
             path = self._select_path(root)
             leaf = path[-1]
             if leaf.state.is_terminal():
@@ -158,6 +168,8 @@ class MCTS:
             else:
                 _, value = self._expand(leaf, evaluator)
             self._backup(path, value)
+            if callback is not None:
+                callback(root, i + 1, path)
 
         visits = [0] * state.pits
         for action, child in root.children.items():

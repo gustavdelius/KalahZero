@@ -25,11 +25,45 @@ lines.append(
 )
 ```
 
-Run:
+Without `--board` the script starts from the standard opening position (6 pits,
+4 stones each). Pass a comma-separated board including both stores to inspect
+any other position, as shown in the Practice section below.
+
+All three commands below accept `--checkpoint` to use a trained network instead
+of the uniform evaluator. With a trained network the priors P reflect what the
+network has learned, making the output much more informative:
 
 ```bash
-python scripts/inspect_position.py --simulations 200 --tree-depth 2
+python scripts/inspect_position.py --checkpoint checkpoints/residual_depth.pt --simulations 200 --tree-depth 2
 ```
+
+Without `--checkpoint` the uniform evaluator assigns equal probability to every
+legal move, so all priors are identical and Q values converge slowly.
+
+To watch N, Q, and P evolve simulation by simulation, add `--watch`:
+
+```bash
+python scripts/inspect_position.py --simulations 200 --tree-depth 2 --watch
+```
+
+The terminal redraws after every simulation. Use `--watch-every N` to redraw
+less often (useful for large simulation counts) and `--delay SECS` to control
+the pace.
+
+To see instead which path each simulation followed, add `--trace`:
+
+```bash
+python scripts/inspect_position.py --checkpoint checkpoints/residual_depth.pt --simulations 50 --trace
+```
+
+This prints one line per simulation showing the sequence of actions from root
+to the selected leaf and that leaf's prior — letting you observe how early
+simulations stay shallow (one action) while later ones push deeper as the tree
+fills in.
+
+Under the hood, `MCTS.search` accepts an optional `callback(root, sim, path)`
+that is called after each backup; both modes pass a closure that reads from
+`path`.
 
 Read the output as:
 
@@ -95,11 +129,19 @@ trained checkpoints should improve.
 
 ## Practice
 
+The `--board` string is the flat board tuple in index order:
+
+```
+P0 pits (0‥5),  P0 store (6),  P1 pits (7‥12),  P1 store (13)
+```
+
 Run:
 
 ```bash
-python scripts/inspect_position.py --board "0,0,1,0,0,1,0,0,0,5,0,0,1,0" --player 0 --simulations 50
+python scripts/inspect_position.py --checkpoint checkpoints/residual_depth.pt \
+  --board "0,0,1,0,0,1,0,0,0,5,0,0,1,0" --player 0 --simulations 50
 ```
 
 This is a capture position from the tests. Check whether search gives visits to
-the capturing move.
+the capturing move, and whether the trained network's prior already favours it
+before any simulations have run.

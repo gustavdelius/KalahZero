@@ -15,9 +15,13 @@ more effort on moves that look promising.
 ## How MCTS Works
 
 When estimating the value of a state, MCTS builds a search tree incrementally, one simulation at a time, for a chosen number of simulations. Each
-simulation is a single pass through three steps:
+simulation is a single pass through three steps (in classical MCTS the word
+"simulation" referred specifically to a random playout to a terminal state;
+AlphaZero replaces that playout with a neural-network evaluation, but the term
+has stuck):
 
-1. **Selection.** Starting from the root, follow the most promising child at
+1. **Selection.** Starting from the root of the search tree (the current game
+   state), follow the most promising child at
    each node until reaching a **leaf** — a node whose children have not yet
    been added to the tree.
 2. **Expansion and evaluation.** Call the evaluator on the leaf node. The
@@ -41,6 +45,15 @@ for _ in range(self.simulations):
         _, value = self._expand(leaf, evaluator)
     self._backup(path, value)
 ```
+
+Each simulation expands exactly one node: selection stops at the first node
+whose children have not yet been created, expansion adds those children, and
+backup retraces the same path back to the root. As the tree deepens, later
+simulations have to walk further during selection — and back further during
+backup — before reaching an unexpanded leaf. This is how MCTS naturally focuses
+effort: early simulations explore all of the root's children shallowly; once
+those children are themselves expanded, later simulations push deeper along
+whichever lines have accumulated the most visits.
 
 After many simulations, nodes on good lines have been visited many times and
 have high average values. Nodes on bad lines have been visited less. At the
