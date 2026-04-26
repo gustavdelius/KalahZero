@@ -160,8 +160,14 @@ c \sim \operatorname{Uniform}\{4,5,6\}.
 $$
 
 Then each self-play game starts from a new Kalah board with $c$ stones in every
-pit. This is useful because the network input is normalized by the total number
-of stones, but the tactics still change: six-stone openings are longer and have
+pit. The network input uses fixed count scales, so these starting boards remain
+distinct:
+
+$$
+\frac{4}{18},\quad \frac{5}{18},\quad \frac{6}{18}.
+$$
+
+That distinction matters because six-stone openings are longer and have
 different extra-turn and capture patterns.
 
 Use:

@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import warnings
 
-from kalah_zero.encoding import encode_state, input_size
+from kalah_zero.encoding import ENCODING_VERSION, encode_state, input_size
 from kalah_zero.game import GameState
 
 
@@ -140,6 +141,7 @@ def save_checkpoint(path: str, model: NetworkModel, optimizer=None, step: int = 
         "model_type": getattr(model, "model_type", "mlp"),
         "hidden_size": getattr(model, "hidden_size", 128),
         "residual_blocks": getattr(model, "residual_blocks", 0),
+        "encoding_version": ENCODING_VERSION,
         "step": step,
     }
     if optimizer is not None:
@@ -150,6 +152,14 @@ def save_checkpoint(path: str, model: NetworkModel, optimizer=None, step: int = 
 def load_checkpoint(path: str, device: str = "cpu") -> tuple[NetworkModel, dict]:
     torch = _torch()
     payload = torch.load(path, map_location=device, weights_only=False)
+    checkpoint_encoding = payload.get("encoding_version")
+    if checkpoint_encoding != ENCODING_VERSION:
+        warnings.warn(
+            "checkpoint was saved with a different board encoding "
+            f"({checkpoint_encoding or 'unknown'}); current encoding is "
+            f"{ENCODING_VERSION}. Fine-tune or retrain before trusting strength.",
+            stacklevel=2,
+        )
     config = payload.get("config", {})
     model_type = payload.get("model_type", config.get("model_type", "mlp"))
     hidden_size = payload.get("hidden_size", config.get("hidden_size", 128))

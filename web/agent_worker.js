@@ -6,6 +6,9 @@
   const STORE_1 = 2 * PITS + 1;
   const DEFAULT_SIMULATIONS = 120;
   const C_PUCT = 1.5;
+  const FIXED_COUNT_ENCODING = "fixed_count_v1";
+  const DEFAULT_PIT_STONE_SCALE = 18;
+  const DEFAULT_STORE_STONE_SCALE = 72;
 
   let evaluatorPromise = null;
 
@@ -70,7 +73,7 @@
     }
 
     evaluate(state) {
-      const features = encodeFeatures(state);
+      const features = encodeFeatures(state, this.config);
       const output = this.forward(features);
       const logits = output.policy;
       const legal = legalActions(state);
@@ -142,11 +145,23 @@
     return output;
   }
 
-  function encodeFeatures(state) {
+  function encodeFeatures(state, config) {
     const player = state.currentPlayer;
     const opponent = 1 - player;
-    const total = Math.max(1, state.board.reduce((sum, value) => sum + value, 0));
     const features = [];
+    if (config.encoding_version === FIXED_COUNT_ENCODING) {
+      const pitScale = Number(config.pit_stone_scale || DEFAULT_PIT_STONE_SCALE);
+      const storeScale = Number(config.store_stone_scale || DEFAULT_STORE_STONE_SCALE);
+      for (const value of pitsFor(state, player)) features.push(value / pitScale);
+      const opponentPits = pitsFor(state, opponent);
+      for (let i = opponentPits.length - 1; i >= 0; i -= 1) features.push(opponentPits[i] / pitScale);
+      features.push(state.board[storeIndex(player)] / storeScale);
+      features.push(state.board[storeIndex(opponent)] / storeScale);
+      features.push(1);
+      return new Float32Array(features);
+    }
+
+    const total = Math.max(1, state.board.reduce((sum, value) => sum + value, 0));
     for (const value of pitsFor(state, player)) features.push(value / total);
     const opponentPits = pitsFor(state, opponent);
     for (let i = opponentPits.length - 1; i >= 0; i -= 1) features.push(opponentPits[i] / total);

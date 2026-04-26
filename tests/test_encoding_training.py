@@ -4,7 +4,13 @@ import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from kalah_zero.encoding import encode_features, input_size
+from kalah_zero.encoding import (
+    ENCODING_VERSION,
+    PIT_STONE_SCALE,
+    STORE_STONE_SCALE,
+    encode_features,
+    input_size,
+)
 from kalah_zero.game import GameState
 from kalah_zero.mcts import UniformEvaluator
 from kalah_zero.train import TrainConfig, ReplayBuffer, self_play_game
@@ -18,6 +24,26 @@ class EncodingAndTrainingTests(unittest.TestCase):
 
         self.assertEqual(len(features), input_size(state.pits))
         self.assertEqual(features[-1], 1.0)
+
+    def test_encode_features_use_fixed_count_scales(self) -> None:
+        four_stone = encode_features(GameState.new_game(stones=4))
+        five_stone = encode_features(GameState.new_game(stones=5))
+        six_stone = encode_features(GameState.new_game(stones=6))
+
+        self.assertEqual(four_stone[0], 4 / PIT_STONE_SCALE)
+        self.assertEqual(five_stone[0], 5 / PIT_STONE_SCALE)
+        self.assertEqual(six_stone[0], 6 / PIT_STONE_SCALE)
+        self.assertNotEqual(four_stone, five_stone)
+        self.assertNotEqual(five_stone, six_stone)
+
+    def test_encode_features_scale_stores_separately(self) -> None:
+        state = GameState((0, 2, 3, 4, 5, 6, 18, 1, 2, 3, 4, 5, 6, 30), current_player=0)
+
+        features = encode_features(state)
+
+        self.assertEqual(features[6], 6 / PIT_STONE_SCALE)
+        self.assertEqual(features[12], 18 / STORE_STONE_SCALE)
+        self.assertEqual(features[13], 30 / STORE_STONE_SCALE)
 
     def test_self_play_generates_training_samples(self) -> None:
         config = TrainConfig(simulations=5, stones=1, temperature_moves=2)
@@ -149,6 +175,7 @@ class OptionalTorchTests(unittest.TestCase):
             loaded_model, loaded_optimizer, loaded_buffer, loaded_rng, loaded_config, completed_games = (
                 load_training_checkpoint(path)
             )
+            payload = torch.load(path, map_location="cpu", weights_only=False)
 
         self.assertEqual(loaded_model.pits, config.pits)
         self.assertIsNotNone(loaded_optimizer)
@@ -157,6 +184,7 @@ class OptionalTorchTests(unittest.TestCase):
         self.assertEqual(loaded_config.opening_plies, config.opening_plies)
         self.assertEqual(completed_games, 2)
         self.assertEqual(len(loaded_buffer), len(buffer))
+        self.assertEqual(payload["encoding_version"], ENCODING_VERSION)
 
         parser = build_parser()
         args = parser.parse_args([

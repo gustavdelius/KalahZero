@@ -7,6 +7,7 @@ from dataclasses import asdict
 from pathlib import Path
 
 import _path  # noqa: F401
+from kalah_zero.encoding import ENCODING_VERSION
 from kalah_zero.network import NeuralEvaluator, create_model
 from kalah_zero.train import ReplayBuffer, TrainConfig, self_play_game, train_step
 
@@ -198,6 +199,7 @@ def save_training_checkpoint(
         "model_type": getattr(model, "model_type", config.model_type),
         "hidden_size": getattr(model, "hidden_size", config.hidden_size),
         "residual_blocks": getattr(model, "residual_blocks", 0),
+        "encoding_version": ENCODING_VERSION,
         "config": asdict(config),
         "completed_games": completed_games,
         "replay_capacity": buffer.capacity,

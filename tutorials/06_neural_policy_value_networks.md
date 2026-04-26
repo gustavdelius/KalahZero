@@ -26,10 +26,10 @@ For $m$ pits per side:
 $$
 x(s) =
 \left[
-\frac{o_0}{S},\ldots,\frac{o_{m-1}}{S},
-\frac{r_{m-1}}{S},\ldots,\frac{r_0}{S},
-\frac{O}{S},
-\frac{R}{S},
+\frac{o_0}{P},\ldots,\frac{o_{m-1}}{P},
+\frac{r_{m-1}}{P},\ldots,\frac{r_0}{P},
+\frac{O}{B},
+\frac{R}{B},
 1
 \right],
 $$
@@ -40,18 +40,43 @@ where:
 - $r_i$ are the opponent's pit stones.
 - $O$ is the current player's store.
 - $R$ is the opponent's store.
-- $S$ is the total number of stones.
+- $P$ is a fixed pit scale. In the code, $P=18$.
+- $B$ is a fixed store scale. In the code, $B=72$.
+
+The scales are fixed constants, not values computed from the current board.
+That matters when one network learns games with different starting stone
+counts. If we divided every count by the total number of stones, the 4-, 5-,
+and 6-stone opening boards would look identical:
+
+$$
+\frac{4}{48} = \frac{5}{60} = \frac{6}{72}.
+$$
+
+With fixed pit scaling, the actual counts remain visible:
+
+$$
+\frac{4}{18} \ne \frac{5}{18} \ne \frac{6}{18}.
+$$
+
+So the encoding keeps the real game state information, but still gives the
+network inputs in a comfortable numeric range.
 
 Code:
 
 ```python
+PIT_STONE_SCALE = 18.0
+STORE_STONE_SCALE = 72.0
+
+
 def encode_features(state: GameState) -> list[float]:
     player = state.current_player
     opponent = 1 - player
-    scale = float(max(1, state.total_stones))
-    own = [stones / scale for stones in state.pits_for(player)]
-    other = [stones / scale for stones in reversed(state.pits_for(opponent))]
-    stores = [state.store_for(player) / scale, state.store_for(opponent) / scale]
+    own = [stones / PIT_STONE_SCALE for stones in state.pits_for(player)]
+    other = [stones / PIT_STONE_SCALE for stones in reversed(state.pits_for(opponent))]
+    stores = [
+        state.store_for(player) / STORE_STONE_SCALE,
+        state.store_for(opponent) / STORE_STONE_SCALE,
+    ]
     return own + other + stores + [1.0]
 ```
 

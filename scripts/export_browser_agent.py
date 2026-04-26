@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 
 import _path  # noqa: F401
+from kalah_zero.encoding import ENCODING_VERSION, PIT_STONE_SCALE, STORE_STONE_SCALE
 from kalah_zero.network import load_checkpoint
 
 
@@ -25,6 +26,7 @@ def main() -> None:
 
     model, checkpoint = load_checkpoint(args.checkpoint)
     model.eval()
+    encoding_version = checkpoint.get("encoding_version", "total_stone_v1")
     payload = {
         "format": "kalah-zero-browser-agent-v1",
         "source": Path(args.checkpoint).name,
@@ -35,6 +37,9 @@ def main() -> None:
             "residual_blocks": int(
                 getattr(model, "residual_blocks", checkpoint.get("residual_blocks", 0))
             ),
+            "encoding_version": encoding_version,
+            "pit_stone_scale": PIT_STONE_SCALE if encoding_version == ENCODING_VERSION else None,
+            "store_stone_scale": STORE_STONE_SCALE if encoding_version == ENCODING_VERSION else None,
         },
         "state_dict": {
             name: tensor_payload(tensor)
