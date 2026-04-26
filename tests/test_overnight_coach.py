@@ -10,11 +10,14 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 
 from overnight_coach import (  # noqa: E402
     EvalResult,
+    balanced_stone_weights,
     build_parser,
     build_train_command,
     checkpoint_score,
     choose_next_focus,
+    format_stone_weights,
     parse_result_line,
+    parse_stone_weight_text,
     scheduled_value,
     score_rate,
 )
@@ -114,6 +117,45 @@ checkpoints/model.pt vs minimax: 90-105-5 (win rate 0.450, simulations=100)
         self.assertIn("--stone-weights", command)
         self.assertIn("4:1,5:1,6:2", command)
         self.assertNotIn("--stones-min", command)
+
+    def test_train_command_accepts_dynamic_stone_weights(self) -> None:
+        args = build_parser().parse_args(["--balance-stone-weights"])
+
+        command = build_train_command(
+            args,
+            checkpoint=Path("runs/block1.pt"),
+            previous_checkpoint=None,
+            target_games=1000,
+            focus_stone=None,
+            stones=[4, 5, 6],
+            stone_weights="4:0.75,5:1,6:1.25",
+        )
+
+        self.assertIn("--stone-weights", command)
+        self.assertIn("4:0.75,5:1,6:1.25", command)
+        self.assertNotIn("--stones-min", command)
+
+    def test_balanced_stone_weights_increase_underperforming_stones(self) -> None:
+        args = build_parser().parse_args(["--eval-simulations", "25"])
+        results = [
+            self._result(stones=4, simulations=25, score=0.70),
+            self._result(stones=5, simulations=25, score=0.50),
+            self._result(stones=6, simulations=25, score=0.25),
+        ]
+
+        weights = parse_stone_weight_text(
+            balanced_stone_weights(args, [4, 5, 6], results, "4:1,5:1,6:1"),
+            [4, 5, 6],
+        )
+
+        self.assertLess(weights[4], weights[5])
+        self.assertLess(weights[5], weights[6])
+
+    def test_stone_weight_text_defaults_missing_stones_to_one(self) -> None:
+        weights = parse_stone_weight_text("6:2", [4, 5, 6])
+
+        self.assertEqual(weights, {4: 1.0, 5: 1.0, 6: 2.0})
+        self.assertEqual(format_stone_weights(weights), "4:1,5:1,6:2")
 
     def test_scheduled_value_repeats_last_item(self) -> None:
         self.assertEqual(scheduled_value("250,150,100", fallback=300, block=1), 250)

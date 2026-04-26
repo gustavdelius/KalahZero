@@ -161,6 +161,20 @@ at a 10% mistake rate. Results are written to:
 - `runs/fixed-scale-overnight/summary.json`
 - `runs/fixed-scale-overnight/best.pt`
 
+To keep the 4-, 5-, and 6-stone minimax results from drifting apart, enable
+adaptive stone weighting:
+
+```bash
+python scripts/overnight_coach.py \
+  --output-dir runs/fixed-scale-balanced \
+  --balance-stone-weights \
+  --eval-games 100
+```
+
+After every block, the coach updates the next training command's
+`--stone-weights` so stone counts with lower minimax score rates are sampled
+more often.
+
 Read the tutorials in order from `tutorials/01_kalah_rules.md`.
 
 ## Tutorial Website

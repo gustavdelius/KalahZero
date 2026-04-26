@@ -57,6 +57,31 @@ def parse_csv_floats(text: str) -> list[float]:
     return [float(item.strip()) for item in text.split(",") if item.strip()]
 
 
+def parse_stone_weight_text(text: str | None, stones: list[int]) -> dict[int, float]:
+    if text is None:
+        return {stone: 1.0 for stone in stones}
+    weights: dict[int, float] = {}
+    for raw_item in text.split(","):
+        item = raw_item.strip()
+        if not item:
+            continue
+        if ":" not in item:
+            raise ValueError("stone weights must look like '4:1,5:1,6:2'")
+        raw_stones, raw_weight = item.split(":", 1)
+        stone = int(raw_stones)
+        weight = float(raw_weight)
+        if weight <= 0:
+            raise ValueError("stone weights must be positive")
+        weights[stone] = weight
+    for stone in stones:
+        weights.setdefault(stone, 1.0)
+    return {stone: weights[stone] for stone in stones}
+
+
+def format_stone_weights(weights: dict[int, float]) -> str:
+    return ",".join(f"{stone}:{weights[stone]:.3g}" for stone in sorted(weights))
+
+
 def parse_result_line(text: str) -> tuple[int, int, int, float]:
     lines = [line.strip() for line in text.splitlines() if line.strip()]
     for line in reversed(lines):
@@ -123,6 +148,33 @@ def build_parser() -> argparse.ArgumentParser:
         "--stone-weights",
         help="Weighted training stone distribution passed to train.py, e.g. '4:1,5:1,6:2'.",
     )
+    parser.add_argument(
+        "--balance-stone-weights",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help=(
+            "After each block, adjust --stone-weights so weaker minimax stone "
+            "counts are sampled more often and stronger ones less often."
+        ),
+    )
+    parser.add_argument(
+        "--stone-weight-balance-strength",
+        type=float,
+        default=1.0,
+        help="Exponent applied to minimax score-ratio corrections when balancing stone weights.",
+    )
+    parser.add_argument(
+        "--stone-weight-min",
+        type=float,
+        default=0.25,
+        help="Minimum generated weight for any stone count when balancing stone weights.",
+    )
+    parser.add_argument(
+        "--stone-weight-max",
+        type=float,
+        default=4.0,
+        help="Maximum generated weight for any stone count when balancing stone weights.",
+    )
     parser.add_argument("--opening-plies-min", type=int, default=0)
     parser.add_argument("--opening-plies-max", type=int, default=8)
     parser.add_argument("--eval-batch-size", type=int, default=8)
@@ -185,6 +237,7 @@ def build_train_command(
     stones: list[int],
     train_simulations: int | None = None,
     epochs: int | None = None,
+    stone_weights: str | None = None,
 ) -> list[str]:
     train_simulations = args.train_simulations if train_simulations is None else train_simulations
     epochs = args.epochs if epochs is None else epochs
@@ -212,7 +265,7 @@ def build_train_command(
         "--eval-batch-size",
         str(args.eval_batch_size),
     ]
-    command.extend(train_stone_args(stones, focus_stone, args.stone_weights))
+    command.extend(train_stone_args(stones, focus_stone, stone_weights or args.stone_weights))
     if previous_checkpoint is None:
         command.extend([
             "--model-type",
@@ -359,6 +412,54 @@ def checkpoint_score(args: argparse.Namespace, results: list[EvalResult]) -> flo
     return normalized - args.parity_penalty * penalty / max(1, len(low_results))
 
 
+def minimax_score_by_stone(
+    args: argparse.Namespace,
+    stones: list[int],
+    results: list[EvalResult],
+) -> dict[int, float]:
+    eval_sims = parse_csv_ints(args.eval_simulations)
+    totals = {stone: 0.0 for stone in stones}
+    weights = {stone: 0.0 for stone in stones}
+    for result in results:
+        if result.opponent != "minimax" or result.stones not in totals:
+            continue
+        weight = simulation_weight(args, result.simulations, eval_sims)
+        totals[result.stones] += weight * result.score_rate
+        weights[result.stones] += weight
+    return {
+        stone: totals[stone] / weights[stone]
+        for stone in stones
+        if weights[stone] > 0
+    }
+
+
+def balanced_stone_weights(
+    args: argparse.Namespace,
+    stones: list[int],
+    results: list[EvalResult],
+    current_weights_text: str | None,
+) -> str:
+    current_weights = parse_stone_weight_text(current_weights_text, stones)
+    scores = minimax_score_by_stone(args, stones, results)
+    if not scores:
+        return format_stone_weights(current_weights)
+    target = sum(scores.values()) / len(scores)
+    if target <= 0:
+        return format_stone_weights(current_weights)
+    raw_weights: dict[int, float] = {}
+    for stone in stones:
+        score = max(scores.get(stone, target), 1e-6)
+        correction = (target / score) ** args.stone_weight_balance_strength
+        raw_weights[stone] = current_weights[stone] * correction
+    mean_weight = sum(raw_weights.values()) / len(raw_weights)
+    normalized = {stone: weight / mean_weight for stone, weight in raw_weights.items()}
+    clamped = {
+        stone: min(args.stone_weight_max, max(args.stone_weight_min, weight))
+        for stone, weight in normalized.items()
+    }
+    return format_stone_weights(clamped)
+
+
 def choose_next_focus(
     args: argparse.Namespace,
     stones: list[int],
@@ -416,6 +517,11 @@ def main() -> None:
     best_score = float("-inf")
     best_checkpoint: str | None = None
     next_focus: int | None = None
+    current_stone_weights = (
+        format_stone_weights(parse_stone_weight_text(args.stone_weights, stones))
+        if args.balance_stone_weights
+        else args.stone_weights
+    )
 
     print(f"writing overnight logs to {output_dir}")
     print(f"starting from completed_games={completed_games}")
@@ -430,12 +536,15 @@ def main() -> None:
             checkpoint,
             previous_checkpoint,
             target_games,
-            next_focus,
+            None if args.balance_stone_weights else next_focus,
             stones,
             train_simulations=train_simulations,
             epochs=epochs,
+            stone_weights=current_stone_weights if args.balance_stone_weights else None,
         )
-        if next_focus is not None:
+        if args.balance_stone_weights:
+            focus_text = f"stone_weights={current_stone_weights}"
+        elif next_focus is not None:
             focus_text = f"stones={next_focus}"
         elif args.stone_weights is not None:
             focus_text = f"stone_weights={args.stone_weights}"
@@ -475,11 +584,16 @@ def main() -> None:
             best_checkpoint = str(output_dir / "best.pt")
             shutil.copy2(checkpoint, best_checkpoint)
             print(f"block {block}: new best score {best_score:.3f} -> {best_checkpoint}")
-        next_focus = choose_next_focus(args, stones, block_results)
-        if next_focus is None:
-            guidance = f"next block: mixed {min(stones)}..{max(stones)}"
+        if args.balance_stone_weights:
+            current_stone_weights = balanced_stone_weights(args, stones, block_results, current_stone_weights)
+            next_focus = None
+            guidance = f"next block: stone_weights={current_stone_weights}"
         else:
-            guidance = f"next block: focus stones={next_focus}"
+            next_focus = choose_next_focus(args, stones, block_results)
+            if next_focus is None:
+                guidance = f"next block: mixed {min(stones)}..{max(stones)}"
+            else:
+                guidance = f"next block: focus stones={next_focus}"
         print(f"block {block}: coach score={block_score:.3f}; {guidance}")
         write_json(
             summary_path,
@@ -490,6 +604,7 @@ def main() -> None:
                 "completed_games": completed_games,
                 "last_checkpoint": str(checkpoint),
                 "next_focus": next_focus,
+                "next_stone_weights": current_stone_weights if args.balance_stone_weights else None,
                 "last_block_score": block_score,
                 "last_train_simulations": train_simulations,
                 "last_epochs": epochs,
