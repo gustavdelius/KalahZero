@@ -161,7 +161,16 @@ def build_parser() -> argparse.ArgumentParser:
         "--stone-weight-balance-strength",
         type=float,
         default=1.0,
-        help="Exponent applied to minimax score-ratio corrections when balancing stone weights.",
+        help="Exponent applied to minimax score-ratio targets when balancing stone weights.",
+    )
+    parser.add_argument(
+        "--stone-weight-smoothing",
+        type=float,
+        default=0.25,
+        help=(
+            "How much of the previous normalized stone weights to retain when "
+            "balancing. Use 0 for purely score-based weights."
+        ),
     )
     parser.add_argument(
         "--stone-weight-min",
@@ -446,18 +455,36 @@ def balanced_stone_weights(
     target = sum(scores.values()) / len(scores)
     if target <= 0:
         return format_stone_weights(current_weights)
-    raw_weights: dict[int, float] = {}
+    target_weights: dict[int, float] = {}
     for stone in stones:
         score = max(scores.get(stone, target), 1e-6)
-        correction = (target / score) ** args.stone_weight_balance_strength
-        raw_weights[stone] = current_weights[stone] * correction
-    mean_weight = sum(raw_weights.values()) / len(raw_weights)
-    normalized = {stone: weight / mean_weight for stone, weight in raw_weights.items()}
-    clamped = {
-        stone: min(args.stone_weight_max, max(args.stone_weight_min, weight))
-        for stone, weight in normalized.items()
+        target_weights[stone] = (target / score) ** args.stone_weight_balance_strength
+    normalized_targets = normalize_weights(target_weights)
+    normalized_current = normalize_weights(current_weights)
+    smoothing = min(1.0, max(0.0, args.stone_weight_smoothing))
+    blended = {
+        stone: smoothing * normalized_current[stone] + (1.0 - smoothing) * normalized_targets[stone]
+        for stone in stones
     }
-    return format_stone_weights(clamped)
+    normalized = normalize_weights(blended)
+    clamped = clamp_weights(normalized, args.stone_weight_min, args.stone_weight_max)
+    return format_stone_weights(normalize_weights(clamped))
+
+
+def normalize_weights(weights: dict[int, float]) -> dict[int, float]:
+    mean_weight = sum(weights.values()) / max(1, len(weights))
+    if mean_weight <= 0:
+        return {stone: 1.0 for stone in weights}
+    return {stone: weight / mean_weight for stone, weight in weights.items()}
+
+
+def clamp_weights(weights: dict[int, float], minimum: float, maximum: float) -> dict[int, float]:
+    if maximum < minimum:
+        minimum, maximum = maximum, minimum
+    return {
+        stone: min(maximum, max(minimum, weight))
+        for stone, weight in weights.items()
+    }
 
 
 def choose_next_focus(

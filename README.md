@@ -173,7 +173,9 @@ python scripts/overnight_coach.py \
 
 After every block, the coach updates the next training command's
 `--stone-weights` so stone counts with lower minimax score rates are sampled
-more often.
+more often. By default, the update keeps 25% of the previous normalized weights
+with `--stone-weight-smoothing 0.25`; set it to `0` for purely score-based
+weights.
 
 Read the tutorials in order from `tutorials/01_kalah_rules.md`.
 

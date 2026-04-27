@@ -151,6 +151,54 @@ checkpoints/model.pt vs minimax: 90-105-5 (win rate 0.450, simulations=100)
         self.assertLess(weights[4], weights[5])
         self.assertLess(weights[5], weights[6])
 
+    def test_balanced_stone_weights_do_not_compound_extreme_previous_weights(self) -> None:
+        args = build_parser().parse_args(["--eval-simulations", "25,50,100,150"])
+        results = [
+            self._result(stones=4, simulations=25, score=0.345),
+            self._result(stones=5, simulations=25, score=0.160),
+            self._result(stones=6, simulations=25, score=0.100),
+            self._result(stones=4, simulations=50, score=0.325),
+            self._result(stones=5, simulations=50, score=0.230),
+            self._result(stones=6, simulations=50, score=0.225),
+            self._result(stones=4, simulations=100, score=0.375),
+            self._result(stones=5, simulations=100, score=0.240),
+            self._result(stones=6, simulations=100, score=0.300),
+            self._result(stones=4, simulations=150, score=0.365),
+            self._result(stones=5, simulations=150, score=0.320),
+            self._result(stones=6, simulations=150, score=0.275),
+        ]
+
+        weights = parse_stone_weight_text(
+            balanced_stone_weights(args, [4, 5, 6], results, "4:0.25,5:0.25,6:2.63"),
+            [4, 5, 6],
+        )
+
+        self.assertGreater(weights[5], weights[4])
+        self.assertLess(weights[6], 2.0)
+        self.assertGreater(weights[5], 0.25)
+
+    def test_balanced_stone_weights_can_use_fresh_score_based_targets(self) -> None:
+        args = build_parser().parse_args([
+            "--eval-simulations",
+            "25",
+            "--stone-weight-smoothing",
+            "0",
+        ])
+        results = [
+            self._result(stones=4, simulations=25, score=0.60),
+            self._result(stones=5, simulations=25, score=0.30),
+            self._result(stones=6, simulations=25, score=0.30),
+        ]
+
+        weights = parse_stone_weight_text(
+            balanced_stone_weights(args, [4, 5, 6], results, "4:0.25,5:0.25,6:3"),
+            [4, 5, 6],
+        )
+
+        self.assertAlmostEqual(weights[4], 0.6, places=1)
+        self.assertAlmostEqual(weights[5], 1.2, places=1)
+        self.assertAlmostEqual(weights[6], 1.2, places=1)
+
     def test_stone_weight_text_defaults_missing_stones_to_one(self) -> None:
         weights = parse_stone_weight_text("6:2", [4, 5, 6])
 
