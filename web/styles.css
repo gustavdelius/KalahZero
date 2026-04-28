@@ -43,13 +43,25 @@ h1, h2, p { margin: 0; }
 
 /* ── Sidebar ── */
 
-.sidebar {
+.game-sidebar {
   flex: 1;
   display: flex;
   flex-direction: column;
   gap: 12px;
   min-width: 0;
   padding-top: 6px;
+  position: sticky;
+  top: 0;
+  max-height: 100svh;
+  overflow-y: auto;
+}
+
+/* When the headroom navbar is visible (scroll-up), push sidebar below it.
+   64px matches the body padding-top set by Bootstrap's nav-fixed class.
+   quarto-nav.js targets .sidebar by name, so we use .game-sidebar to avoid
+   it overriding our max-height with a shrunken calc(100vh - 64px) value. */
+#quarto-header.headroom--pinned ~ #quarto-content .game-sidebar {
+  top: 64px;
 }
 
 /* Title */
@@ -85,10 +97,6 @@ h1 {
   border: 1px solid var(--line);
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06), 0 4px 16px rgba(0, 0, 0, 0.04);
   overflow: hidden;
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  flex-shrink: 0;
 }
 
 .player-score {
@@ -491,5 +499,5 @@ select:focus-visible,
     gap: 20px;
   }
 
-  .sidebar { width: 100%; padding-top: 0; }
+  .game-sidebar { width: 100%; padding-top: 0; }
 }
