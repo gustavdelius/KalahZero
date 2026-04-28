@@ -10,7 +10,7 @@ policy-value network, self-play training, and evaluation tools.
 
 You do not need to arrive already knowing what an AI agent, a neural network,
 or a search algorithm is. If you are simply curious about how a computer can
-learn to play a board game, this site has a gentle route for you too.
+learn to play a board game, this site has a [gentle introduction](tutorials/00_plain_language_intro.md) for you too.
 
 
 ## A Little History
@@ -34,7 +34,7 @@ the board and rules in the 1950s.
 In Germany the game is known as **Serata**. In 1978 a German student named Paul Erich Firelinghaus entered the prestigious "Jugend forscht" science competition with a computer program designed to solve Serata, and he won first place in the mathematics category.
 
 Technology has moved on since 1978. Here, the small,
-approachable board game Serata becomes a place to study ideas from one of the most
+approachable board game Serata becomes a place to study ideas from Alpha Zero, one of the most
 influential AI game systems of the last decade.
 
 ## Start Here
