@@ -5,6 +5,10 @@ __pycache__/
 .ruff_cache/
 .venv/
 checkpoints/
+runs/
+build/
+*.egg-info/
+*.so
 self_play_samples.pkl
 /.quarto/
 /_site/
