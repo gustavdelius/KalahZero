@@ -5,7 +5,9 @@ title: "Rules and Controls"
 This page explains how to play the browser version of KalahZero and what each
 control does. You can read it before playing, or keep it open in another tab.
 
-## Goal
+## The Rules
+
+### Goal
 
 Kalah is a two-player sowing game. The goal is to finish with more stones in
 your store than your opponent has in theirs.
@@ -14,34 +16,32 @@ In the browser game:
 
 - **South** is the bottom player.
 - **North** is the top player.
-- Each player owns the six small pits on their side.
-- Each player also owns one large store.
-- Stones in your store are your score.
+- Each player owns the six small pits on their left side of the board.
+- Each player also owns one large store at their end of the board.
+- The number of stones in your store is your score.
 
-## Taking a Turn
+### Taking a Turn
 
 On your turn, choose one of your non-empty pits.
 
 The game then:
 
 1. picks up all stones from that pit,
-2. drops them one by one into the following pits and your own store,
+2. drops them one by one into the following pits and your own store, going counterclockwise around the board,
 3. skips your opponent's store,
-4. applies any extra-turn or capture rule,
+4. applies any extra-turn or capture rule (see below), and
 5. passes the move to the next player when appropriate.
 
 Only legal pits are clickable. During animation or while the computer is
 thinking, the board waits until the move is finished.
 
-## Extra Turns
+### Extra Turns
 
 You move again if the final stone of your move lands in your own store.
 
-This project also gives you another move when your move captures stones. That
-is the rule used by the tutorials and the browser game, so search agents and
-human players are playing the same version.
+This project uses modified rules that also give you another move when your move captures stones.
 
-## Captures
+### Captures
 
 A capture happens when your final stone lands in one of your own empty pits and
 the opposite pit on your opponent's side contains stones.
@@ -51,9 +51,9 @@ When that happens:
 - your final stone is captured,
 - the stones in the opposite pit are captured,
 - all captured stones move into your store,
-- you get another move in this project variant.
+- you get another move (that is our modified rule).
 
-## Ending the Game
+### Ending the Game
 
 The game ends as soon as one player has no stones left in any of their six
 pits.
@@ -62,21 +62,19 @@ When that happens, all remaining stones on each side move into that side's own
 store. The player with the larger store total wins. If the totals are equal,
 the game is a draw.
 
-## Board Display
+## The Web Interface
+
+### Board Display
+
+The board shows the current position of all stones. When it is your turn, you can click one of your non-empty pits to make a move. This triggers the redistribution of the stones from that pit. When your turn is over, the computer opponent will make its move, and you can watch the stones move around the board as it does so.
+
+If you hover over a pit, the number of stones in that pit will be displayed to save you the effort of counting them. If you play on a mobile phone, you can do a long press on a pit to see the stone count.
 
 The score panel shows the current store totals for North and South. The status
 line tells you whose turn it is, whether the computer is thinking, or who won
 the finished game.
 
-Move labels use pit numbers from the current player's side. For example,
-`South 3` means South moved from South's third pit.
-
-Move labels can also include:
-
-- **capture**: the move captured stones,
-- **again**: the same player gets another move.
-
-## Controls
+### Controls
 
 **Opponent** chooses the computer player:
 
@@ -85,10 +83,10 @@ Move labels can also include:
 - **Minimax** searches several moves ahead with alpha-beta pruning and a simple
   score-margin heuristic.
 - **Random** chooses randomly from legal moves.
-- **Trained agent** uses the browser-side trained search agent.
+- **Trained agent** uses the AlphaZero-style trained agent.
 
 **Depth** appears when Minimax is selected. Move the slider toward **Fast** for
-shallower search, or toward **Deep** for stronger but slower play. The slider
+shallower search, or toward **Deep** for stronger play. The slider
 ranges from depth 1 (fastest) to depth 8 (strongest), with a default of 6.
 
 **Search** appears when the trained agent is selected. Move the slider toward
@@ -96,17 +94,17 @@ ranges from depth 1 (fastest) to depth 8 (strongest), with a default of 6.
 agent chooses. The slider ranges from 20 simulations (fastest) to 240
 (strongest), with a default of 120.
 
-**You play as** chooses your side. Changing sides starts a new game.
+**You play as** chooses your side. Changing sides starts a new game. South moves first, so if you choose North, the computer will make the first move.
 
 **Starting stones** chooses how many stones begin in each pit. Changing this
-starts a new game.
+starts a new game. The default is 6 stones, which makes for a more exciting game than standard Kalah using 4 stones. 
 
 **Animation speed** changes how quickly stones move around the board. It does
 not change the rules or the computer's strength.
 
 **New Game** restarts with the current settings.
 
-## Move History
+### Move History
 
 The move history lists the most recent moves first. Click a move to rewind the
 board to the position after that move.
@@ -114,6 +112,14 @@ board to the position after that move.
 After rewinding, you can continue from that position. If it is the computer's
 turn, it will move from the rewound position using the currently selected
 opponent.
+
+Move labels use pit numbers from the current player's side. For example,
+`South 3` means South moved from South's third pit.
+
+Move labels can also include:
+
+- **capture**: the move captured stones,
+- **again**: the same player gets another move.
 
 ## Ready to Play
 

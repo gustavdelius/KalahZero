@@ -3,10 +3,12 @@ title: "KalahZero"
 subtitle: "Learn AlphaZero by building it for Kalah (a.k.a. Serata)"
 ---
 
-KalahZero is a teaching project for understanding AlphaZero from first
-principles by applying the concepts to the game of Kalah (a.k.a. Serata). The project pairs derivation-first tutorials with a compact Python
+**Serata** is a simple strategy board game that my daughter and I love to play. It is more commonly know as **Kalah**. However we play it with [rules](web/rules.qmd) that deviate from the standard rules in one important way: when a player captures seeds from the opponent's side, they get to take another turn. This makes the game more fun for us because even a player who seems behind can suddenly surge ahead with a string of captures. We have found it very difficult to build an intuition for how to choose moves that will lead to such a cascade of captures later on in the game. In that sense, the game is similar to Go, where players also struggle to see the long-term consequences of their moves, and where **AlphaZero**-style search and learning has been very successful. So I thought this would be a perfect opportunity to learn how to build an AlphaZero-style agent for Kalah.
+
+So this site is a teaching project for understanding AlphaZero from first
+principles by applying the concepts to the game of Kalah, with our modified capture rule. The project pairs derivation-first tutorials with a compact Python
 implementation of Kalah, baseline agents, Monte Carlo Tree Search, a PyTorch
-policy-value network, self-play training, and evaluation tools.
+policy-value network, self-play training, and evaluation tools. All code and all text (except for these two opening paragraphs) were entirely written by **Codex** (ChatGPT 5.5) and **Claude Code** (Sonnet 4.6). My only role was to ask questions whenever something was unclear to me and to ask the agents to expand the documentation accordingly. The result is this site, which I hope will be useful to anyone who wants to understand how AlphaZero works by building it for a small, approachable game.
 
 You do not need to arrive already knowing what an AI agent, a neural network,
 or a search algorithm is. If you are simply curious about how a computer can
@@ -33,9 +35,6 @@ the board and rules in the 1950s.
 
 In Germany the game is known as **Serata**. In 1978 a German student named Paul Erich Firelinghaus entered the prestigious "Jugend forscht" science competition with a computer program designed to solve Serata, and he won first place in the mathematics category.
 
-Technology has moved on since 1978. Here, the small,
-approachable board game Serata becomes a place to study ideas from Alpha Zero, one of the most
-influential AI game systems of the last decade.
 
 ## Start Here
 
