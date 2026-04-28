@@ -67,12 +67,12 @@ format:
       </label>
       <label id="minimax-depth-control" class="hidden">
         Depth
-        <input id="minimax-depth" type="range" min="2" max="8" step="1" value="6">
+        <input id="minimax-depth" type="range" min="1" max="8" step="1" value="6">
         <span class="range-labels"><span>Fast</span><span>Deep</span></span>
       </label>
       <label id="agent-simulations-control" class="hidden">
         Search
-        <input id="agent-simulations" type="range" min="40" max="240" step="20" value="120">
+        <input id="agent-simulations" type="range" min="20" max="240" step="20" value="120">
         <span class="range-labels"><span>Fast</span><span>Deep</span></span>
       </label>
       <label>

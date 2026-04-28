@@ -88,11 +88,13 @@ Move labels can also include:
 - **Trained agent** uses the browser-side trained search agent.
 
 **Depth** appears when Minimax is selected. Move the slider toward **Fast** for
-shallower search, or toward **Deep** for stronger but slower play.
+shallower search, or toward **Deep** for stronger but slower play. The slider
+ranges from depth 1 (fastest) to depth 8 (strongest), with a default of 6.
 
 **Search** appears when the trained agent is selected. Move the slider toward
 **Fast** for quicker responses, or toward **Deep** for more search before the
-agent chooses.
+agent chooses. The slider ranges from 20 simulations (fastest) to 240
+(strongest), with a default of 120.
 
 **You play as** chooses your side. Changing sides starts a new game.
 
