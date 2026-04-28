@@ -8,6 +8,7 @@ on:
       - "index.qmd"
       - "styles/**"
       - "tutorials/**"
+      - "web/**"
       - ".github/workflows/quarto-pages.yml"
   workflow_dispatch:
 
