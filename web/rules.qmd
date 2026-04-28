@@ -82,8 +82,13 @@ Move labels can also include:
 
 - **Greedy** chooses the move that immediately improves its score margin the
   most.
+- **Minimax** searches several moves ahead with alpha-beta pruning and a simple
+  score-margin heuristic.
 - **Random** chooses randomly from legal moves.
 - **Trained agent** uses the browser-side trained search agent.
+
+**Depth** appears when Minimax is selected. Move the slider toward **Fast** for
+shallower search, or toward **Deep** for stronger but slower play.
 
 **Search** appears when the trained agent is selected. Move the slider toward
 **Fast** for quicker responses, or toward **Deep** for more search before the

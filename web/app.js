@@ -300,6 +300,8 @@
     elements.status = document.querySelector("#status");
     elements.history = document.querySelector("#history");
     elements.opponent = document.querySelector("#opponent");
+    elements.minimaxDepthControl = document.querySelector("#minimax-depth-control");
+    elements.minimaxDepth = document.querySelector("#minimax-depth");
     elements.agentSimulationsControl = document.querySelector("#agent-simulations-control");
     elements.agentSimulations = document.querySelector("#agent-simulations");
     elements.humanPlayer = document.querySelector("#human-player");
@@ -380,8 +382,61 @@
   async function chooseOpponentAction(gameState) {
     if (opponent === "random") return chooseRandom(gameState);
     if (opponent === "greedy") return chooseGreedy(gameState);
+    if (opponent === "minimax") return chooseMinimax(gameState);
     if (opponent === "trained") return requestTrainedAgentMove(gameState);
     throw new Error(`Unknown opponent ${opponent}`);
+  }
+
+  function chooseMinimax(gameState) {
+    const depth = elements.minimaxDepth ? Number(elements.minimaxDepth.value) : 6;
+    const perspective = gameState.currentPlayer;
+    const legal = legalActions(gameState);
+    let bestAction = legal[0];
+    let bestValue = -Infinity;
+    let alpha = -Infinity;
+    const beta = Infinity;
+
+    for (const action of legal) {
+      const value = minimaxSearch(applyMove(gameState, action), depth - 1, perspective, alpha, beta);
+      if (value > bestValue) {
+        bestAction = action;
+        bestValue = value;
+      }
+      alpha = Math.max(alpha, bestValue);
+    }
+
+    return bestAction;
+  }
+
+  function minimaxSearch(gameState, depth, perspective, alpha, beta) {
+    if (isTerminal(gameState)) return rewardForPlayer(gameState, perspective);
+    if (depth <= 0) return evaluateMinimax(gameState, perspective);
+
+    if (gameState.currentPlayer === perspective) {
+      let value = -Infinity;
+      for (const action of legalActions(gameState)) {
+        value = Math.max(value, minimaxSearch(applyMove(gameState, action), depth - 1, perspective, alpha, beta));
+        alpha = Math.max(alpha, value);
+        if (alpha >= beta) break;
+      }
+      return value;
+    }
+
+    let value = Infinity;
+    for (const action of legalActions(gameState)) {
+      value = Math.min(value, minimaxSearch(applyMove(gameState, action), depth - 1, perspective, alpha, beta));
+      beta = Math.min(beta, value);
+      if (alpha >= beta) break;
+    }
+    return value;
+  }
+
+  function evaluateMinimax(gameState, perspective) {
+    const ownPits = sumPits(gameState, perspective);
+    const otherPits = sumPits(gameState, 1 - perspective);
+    const storeMargin = margin(gameState, perspective);
+    const pitMargin = ownPits - otherPits;
+    return (storeMargin + 0.25 * pitMargin) / Math.max(1, totalStones(gameState));
   }
 
   async function requestTrainedAgentMove(gameState) {
@@ -487,6 +542,7 @@
 
   function updateAgentControls() {
     elements.agentSimulationsControl.classList.toggle("hidden", opponent !== "trained");
+    elements.minimaxDepthControl.classList.toggle("hidden", opponent !== "minimax");
   }
 
   function renderStores(boardState) {
@@ -642,6 +698,14 @@
     maybeAgentMove();
   }
 
+  function sumPits(gameState, player) {
+    return pitIndices(player).reduce((sum, index) => sum + gameState.board[index], 0);
+  }
+
+  function totalStones(gameState) {
+    return gameState.board.reduce((sum, value) => sum + value, 0);
+  }
+
   if (typeof window !== "undefined") {
     window.KalahWeb = { newGame, applyMove, legalActions, isTerminal };
     window.addEventListener("DOMContentLoaded", init);
@@ -653,6 +717,8 @@
       applyMove,
       legalActions,
       isTerminal,
+      chooseMinimax,
+      minimaxSearch,
       PITS,
       STONES: DEFAULT_STONES,
       DEFAULT_STONES,

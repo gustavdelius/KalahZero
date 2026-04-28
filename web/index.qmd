@@ -60,9 +60,15 @@ format:
         Opponent
         <select id="opponent">
           <option value="greedy">Greedy</option>
+          <option value="minimax">Minimax</option>
           <option value="random">Random</option>
           <option value="trained" selected>Trained agent</option>
         </select>
+      </label>
+      <label id="minimax-depth-control" class="hidden">
+        Depth
+        <input id="minimax-depth" type="range" min="2" max="8" step="1" value="6">
+        <span class="range-labels"><span>Fast</span><span>Deep</span></span>
       </label>
       <label id="agent-simulations-control" class="hidden">
         Search
