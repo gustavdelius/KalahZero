@@ -609,7 +609,7 @@
   function stonesLayer(amount, salt, stoneColors) {
     const layer = document.createElement("span");
     layer.className = "stones";
-    const visible = Math.min(amount, 18);
+    const visible = Math.min(amount, 50);
     const positions = packedStonePositions(visible, salt);
     for (let i = 0; i < visible; i += 1) {
       const stone = document.createElement("span");
