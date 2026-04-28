@@ -12,22 +12,24 @@ friendlier first step.
 
 ## Learning Path
 
+Foundations
 0. [AI Game Learning in Plain Language](00_plain_language_intro.md)
 1. [Kalah Rules and State Representation](01_kalah_rules.md)
 2. [Perfect-Information Games](02_perfect_information_games.md)
 3. [Baseline Agents](03_baseline_agents.md)
+Search
 4. [Monte Carlo Tree Search](04_monte_carlo_tree_search.md)
-5. [From UCT to AlphaZero PUCT](05_puct.md), where UCT means Upper Confidence
-   bounds applied to Trees and PUCT is AlphaZero's predictor/prior-guided
-   variant.
+5. [From UCT to AlphaZero PUCT](05_puct.md)
+Learning Intuition
 6. [Neural Policy and Value Networks](06_neural_policy_value_networks.md)
 7. [Self-Play Training Loop](07_self_play_training.md)
 8. [AlphaZero Loss Derivation](08_alphazero_loss.md)
+In Practice
 9. [Evaluation and Elo-Style Comparisons](09_evaluation.md)
 10. [Instrumentation and Debugging](10_instrumentation.md)
 11. [Scaling Strength](11_scaling_strength.md)
 12. [Reading the Whole Codebase](12_codebase_walkthrough.md)
-13. [Residual Depth Evaluation](13_residual_depth_evaluation.qmd)
+13. [Evaluation of best checkpoint](13_residual_depth_evaluation.qmd)
 
 ## Study Rhythm
 
@@ -36,7 +38,7 @@ Each chapter follows the same rhythm:
 $$
 \text{concept}
 \rightarrow
-\text{equation}
+\text{equations}
 \rightarrow
 \text{code}
 \rightarrow

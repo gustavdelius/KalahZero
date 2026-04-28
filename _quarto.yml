@@ -51,7 +51,7 @@ website:
               text: "4. Monte Carlo Tree Search"
             - href: tutorials/05_puct.md
               text: "5. PUCT"
-        - section: "Learning"
+        - section: "Learning Intuition"
           contents:
             - href: tutorials/06_neural_policy_value_networks.md
               text: "6. Policy-Value Networks"
@@ -59,7 +59,7 @@ website:
               text: "7. Self-Play"
             - href: tutorials/08_alphazero_loss.md
               text: "8. AlphaZero Loss"
-        - section: "Practice"
+        - section: "In Practice"
           contents:
             - href: tutorials/09_evaluation.md
               text: "9. Evaluation"
@@ -70,7 +70,7 @@ website:
             - href: tutorials/12_codebase_walkthrough.md
               text: "12. Codebase Walkthrough"
             - href: tutorials/13_residual_depth_evaluation.qmd
-              text: "13. Residual Depth Evaluation"
+              text: "13. Evaluation of best checkpoint"
 
 format:
   html:

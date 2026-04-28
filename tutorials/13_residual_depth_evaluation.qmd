@@ -1,269 +1,218 @@
 ---
-title: "13. Residual Depth Evaluation"
+title: "13. Width-256 Depth-4 Residual Evaluation"
 ---
 
 ## Goal
 
-This note evaluates the current `checkpoints/residual_depth.pt` checkpoint
-against several opponents. The purpose is not to declare a final strength
-rating. It is to learn what changed after moving from the plain MLP to a
-depth-only residual MLP.
+This page evaluates `checkpoints/width256-blocks4.pt` against several opponents.
+All evaluations run as executable Python blocks, so re-rendering this page after
+updating the checkpoint automatically updates the results.
 
-The checkpoint metadata is:
+## Checkpoint Metadata
 
-| field | value |
-|---|---:|
-| completed self-play games | 3000 |
-| model type | residual |
-| hidden size | 128 |
-| residual blocks | 3 |
-| training simulations | 250 |
-| opening plies | 0..8 |
-| replay capacity | 50000 |
+```{python}
+#| echo: false
+#| output: asis
 
-The architecture is the depth-only experiment:
+import sys
+from pathlib import Path
+import torch
+
+# Quarto sets CWD to the document directory (tutorials/).
+# The project root is one level up.
+_here = Path.cwd()
+PROJ_ROOT = _here if (_here / "_quarto.yml").exists() else _here.parent
+sys.path.insert(0, str(PROJ_ROOT / "src"))
+
+CHECKPOINT = str(PROJ_ROOT / "checkpoints" / "width256-blocks4.pt")
+
+payload = torch.load(CHECKPOINT, map_location="cpu", weights_only=False)
+config = payload.get("config", {})
+
+meta = [
+    ("completed self-play games", payload.get("completed_games", payload.get("step", "?"))),
+    ("model type", payload.get("model_type", "?")),
+    ("hidden size", payload.get("hidden_size", "?")),
+    ("residual blocks", payload.get("residual_blocks", "?")),
+    ("training simulations", config.get("simulations", "?")),
+    ("opening plies", f"{config.get('opening_plies_min', 0)}..{config.get('opening_plies_max', 0)}"),
+    ("replay capacity", payload.get("replay_capacity", config.get("replay_capacity", "?"))),
+]
+
+print("| field | value |")
+print("|---|---:|")
+for k, v in meta:
+    print(f"| {k} | {v} |")
+```
+
+The architecture is a residual MLP with wider hidden layers and more depth:
 
 $$
-\text{residual MLP, hidden size } 128, \text{ blocks } 3.
+\text{residual MLP, hidden size } 256, \text{ blocks } 4.
 $$
 
-That means this run tests depth while keeping the hidden width equal to the
-original MLP.
+This run tests both increased width and depth compared to the earlier
+`residual_depth.pt` experiment (hidden size 128, blocks 3).
 
 ## Evaluation Setup
 
-All evaluations used the same random-opening distribution:
+```{python}
+#| echo: false
 
-$$
-k \sim \operatorname{Uniform}\{0,1,\ldots,8\}.
-$$
+import random
+from kalah_zero.network import NeuralEvaluator, load_checkpoint
+from kalah_zero.batched_mcts import BatchedMCTS
+from kalah_zero.agents import MCTSAgent, MinimaxAgent, RandomAgent, GreedyAgent, NoisyAgent
+from kalah_zero.mcts import UniformEvaluator
+from kalah_zero.evaluate import arena
+from kalah_zero.fast_game import FastGameState
 
-For each paired opening, the evaluator reused the same opening position with
-the players swapped. This reduces the chance that one agent gets easier
-openings by accident.
+model, _meta = load_checkpoint(CHECKPOINT)
+evaluator = NeuralEvaluator(model)
 
-The neural agent used:
+# Shared keyword arguments for all arena() calls.
+# Openings match the training distribution (0..4 random plies, stones=4).
+EVAL_KWARGS = dict(
+    games=200,
+    state_cls=FastGameState,
+    opening_plies_min=0,
+    opening_plies_max=4,
+    seed=0,
+)
 
-- batched Monte Carlo Tree Search,
-- evaluation batch size 8,
-- the optional C++ game engine,
-- deterministic action selection from search visit counts.
+def make_neural_agent(simulations: int, batch_size: int = 8) -> MCTSAgent:
+    """Return a neural MCTS agent with batched leaf evaluation."""
+    search = BatchedMCTS(simulations=simulations, batch_size=batch_size)
+    return MCTSAgent(search, evaluator, temperature=0.0)
 
-The common command shape was:
-
-```bash
-python scripts/evaluate.py \
-  --checkpoint-a checkpoints/residual_depth.pt \
-  --agent-b minimax \
-  --games 200 \
-  --simulations 250 \
-  --batched-mcts \
-  --eval-batch-size 8 \
-  --fast-game \
-  --opening-plies-min 0 \
-  --opening-plies-max 8
+def score_rate(r) -> float:
+    """Score rate: wins count 1, draws count ½."""
+    return (r.wins_0 + 0.5 * r.draws) / r.games
 ```
 
-The script reports a win rate:
+All evaluations use:
+
+- batched Monte Carlo Tree Search, evaluation batch size 8
+- the optional C++ game engine (`FastGameState`)
+- deterministic action selection (temperature 0)
+- 200 paired games with random openings drawn from
+  $k \sim \operatorname{Uniform}\{0, \ldots, 4\}$
+
+The result notation is $\text{agent wins} - \text{opponent wins} - \text{draws}$,
+and the score rate gives half credit for draws:
 
 $$
-\widehat{w} = \frac{\text{wins}}{\text{games}}.
-$$
-
-For comparison, the table below also includes score rate, which gives half
-credit for draws:
-
-$$
-\widehat{s} =
-\frac{\text{wins} + \frac{1}{2}\text{draws}}{\text{games}}.
+\widehat{s} = \frac{\text{wins} + \tfrac{1}{2}\text{draws}}{\text{games}}.
 $$
 
 ## Results
 
-| opponent | games | simulations | result | win rate | score rate |
-|---|---:|---:|---:|---:|---:|
-| random | 200 | 100 | 199-1-0 | 0.995 | 0.995 |
-| greedy | 200 | 100 | 150-30-20 | 0.750 | 0.800 |
-| MCTS with uniform evaluator | 100 | 100 | 91-5-4 | 0.910 | 0.930 |
-| minimax | 200 | 100 | 42-149-9 | 0.210 | 0.233 |
-| minimax | 200 | 250 | 62-131-7 | 0.310 | 0.328 |
-| minimax | 200 | 400 | 74-107-19 | 0.370 | 0.417 |
-| noisy minimax, $\epsilon=0.1$ | 200 | 100 | 64-127-9 | 0.320 | 0.343 |
+### Against simple baselines
 
-The result notation is:
-
-$$
-\text{agent wins} - \text{opponent wins} - \text{draws}.
-$$
-
-## Commands
-
-Random:
-
-```bash
-python scripts/evaluate.py \
-  --checkpoint-a checkpoints/residual_depth.pt \
-  --agent-b random \
-  --games 200 \
-  --simulations 100 \
-  --batched-mcts \
-  --eval-batch-size 8 \
-  --fast-game \
-  --opening-plies-min 0 \
-  --opening-plies-max 8
+```{python}
+r_random  = arena(make_neural_agent(100), RandomAgent(random.Random(1)), **EVAL_KWARGS)
+r_greedy  = arena(make_neural_agent(100), GreedyAgent(), **EVAL_KWARGS)
+r_uniform = arena(
+    make_neural_agent(100),
+    MCTSAgent(BatchedMCTS(simulations=100, batch_size=8), UniformEvaluator(), temperature=0.0),
+    **EVAL_KWARGS,
+)
 ```
 
-Greedy:
+```{python}
+#| echo: false
+#| output: asis
 
-```bash
-python scripts/evaluate.py \
-  --checkpoint-a checkpoints/residual_depth.pt \
-  --agent-b greedy \
-  --games 200 \
-  --simulations 100 \
-  --batched-mcts \
-  --eval-batch-size 8 \
-  --fast-game \
-  --opening-plies-min 0 \
-  --opening-plies-max 8
+print("| opponent | sims | result | win rate | score rate |")
+print("|---|---:|---:|---:|---:|")
+for label, r in [("random", r_random), ("greedy", r_greedy), ("uniform MCTS", r_uniform)]:
+    print(f"| {label} | 100 | {r.wins_0}-{r.wins_1}-{r.draws} | {r.win_rate_0:.3f} | {score_rate(r):.3f} |")
 ```
 
-Uniform MCTS:
+### Against minimax
 
-```bash
-python scripts/evaluate.py \
-  --checkpoint-a checkpoints/residual_depth.pt \
-  --agent-b mcts \
-  --games 100 \
-  --simulations 100 \
-  --batched-mcts \
-  --eval-batch-size 8 \
-  --fast-game \
-  --opening-plies-min 0 \
-  --opening-plies-max 8
+```{python}
+minimax_agent = MinimaxAgent(depth=6)
+
+r_mm100 = arena(make_neural_agent(100), minimax_agent, **EVAL_KWARGS)
+r_mm250 = arena(make_neural_agent(250), minimax_agent, **EVAL_KWARGS)
+r_mm400 = arena(make_neural_agent(400), minimax_agent, **EVAL_KWARGS)
 ```
 
-Deterministic minimax:
+```{python}
+#| echo: false
+#| output: asis
 
-```bash
-python scripts/evaluate.py \
-  --checkpoint-a checkpoints/residual_depth.pt \
-  --agent-b minimax \
-  --games 200 \
-  --simulations 100 \
-  --batched-mcts \
-  --eval-batch-size 8 \
-  --fast-game \
-  --opening-plies-min 0 \
-  --opening-plies-max 8
-
-python scripts/evaluate.py \
-  --checkpoint-a checkpoints/residual_depth.pt \
-  --agent-b minimax \
-  --games 200 \
-  --simulations 250 \
-  --batched-mcts \
-  --eval-batch-size 8 \
-  --fast-game \
-  --opening-plies-min 0 \
-  --opening-plies-max 8
-
-python scripts/evaluate.py \
-  --checkpoint-a checkpoints/residual_depth.pt \
-  --agent-b minimax \
-  --games 200 \
-  --simulations 400 \
-  --batched-mcts \
-  --eval-batch-size 8 \
-  --fast-game \
-  --opening-plies-min 0 \
-  --opening-plies-max 8
+print("| opponent | sims | result | win rate | score rate |")
+print("|---|---:|---:|---:|---:|")
+for sims, r in [(100, r_mm100), (250, r_mm250), (400, r_mm400)]:
+    print(f"| minimax | {sims} | {r.wins_0}-{r.wins_1}-{r.draws} | {r.win_rate_0:.3f} | {score_rate(r):.3f} |")
 ```
 
-Noisy minimax:
+### Against noisy minimax
 
-```bash
-python scripts/evaluate.py \
-  --checkpoint-a checkpoints/residual_depth.pt \
-  --agent-b noisy-minimax \
-  --games 200 \
-  --simulations 100 \
-  --batched-mcts \
-  --eval-batch-size 8 \
-  --fast-game \
-  --opening-plies-min 0 \
-  --opening-plies-max 8 \
-  --noise-prob 0.1
+```{python}
+r_noisy = arena(
+    make_neural_agent(100),
+    NoisyAgent(MinimaxAgent(depth=6), epsilon=0.1, rng=random.Random(2)),
+    **EVAL_KWARGS,
+)
+```
+
+```{python}
+#| echo: false
+#| output: asis
+
+r = r_noisy
+print("| opponent | sims | result | win rate | score rate |")
+print("|---|---:|---:|---:|---:|")
+print(f"| noisy minimax (ε=0.1) | 100 | {r.wins_0}-{r.wins_1}-{r.draws} | {r.win_rate_0:.3f} | {score_rate(r):.3f} |")
+```
+
+## Summary
+
+```{python}
+#| echo: false
+#| output: asis
+
+rows = [
+    ("random",              100, r_random),
+    ("greedy",              100, r_greedy),
+    ("uniform MCTS",        100, r_uniform),
+    ("minimax",             100, r_mm100),
+    ("minimax",             250, r_mm250),
+    ("minimax",             400, r_mm400),
+    ("noisy minimax, ε=0.1", 100, r_noisy),
+]
+
+print("| opponent | games | simulations | result | win rate | score rate |")
+print("|---|---:|---:|---:|---:|---:|")
+for label, sims, r in rows:
+    print(f"| {label} | {r.games} | {sims} | {r.wins_0}-{r.wins_1}-{r.draws} | {r.win_rate_0:.3f} | {score_rate(r):.3f} |")
 ```
 
 ## Interpretation
 
-The residual-depth checkpoint easily beats random play, greedy play, and
-uniform-evaluator MCTS on this randomized-opening distribution. That is a good
-basic sanity check: the network and search are learning something stronger than
-the simple baselines.
+This checkpoint represents a significant increase in model capacity over the earlier
+`residual_depth.pt` run:
 
-The hard result is deterministic minimax. The residual checkpoint improves as
-the search budget increases:
+| parameter | residual_depth | width256-blocks4 |
+|---|---:|---:|
+| hidden size | 128 | 256 |
+| residual blocks | 3 | 4 |
+| training games | 3 000 | 41 082 |
+| training simulations | 250 | 400 |
 
-$$
-0.210 \rightarrow 0.310 \rightarrow 0.370
-$$
+The combination of wider hidden layers, more depth, more training games, and a higher
+simulation budget at training time should translate to substantially stronger play than
+the earlier residual-depth experiment.
 
-for 100, 250, and 400 simulations. This means extra search still helps, so the
-network is not completely misleading MCTS. But even at 400 simulations the agent
-is below parity against minimax.
+The minimax results are the key benchmark.  Crossing 50 % win rate against deterministic
+minimax (depth 6) is a reliable signal that the network has internalised meaningful game
+knowledge.  The score at 400 simulations — matching the model's own training budget — is
+the most relevant single number.
 
-The noisy-minimax result is also informative. With a $10\%$ random-move error
-rate, the agent scores better than it does against deterministic minimax at the
-same 100-simulation budget:
-
-$$
-0.210 \rightarrow 0.320.
-$$
-
-That suggests the agent can exploit some mistakes, but deterministic minimax is
-still exposing tactical weaknesses.
-
-## Comparison With The Plain MLP
-
-The current plain MLP checkpoint was previously evaluated on the same
-`0..8` opening distribution after 5800 games:
-
-| checkpoint | simulations | result vs minimax | win rate |
-|---|---:|---:|---:|
-| plain MLP | 100 | 53-142-5 | 0.265 |
-| plain MLP | 250 | 83-113-4 | 0.415 |
-| plain MLP | 400 | 80-113-7 | 0.400 |
-| residual depth | 100 | 42-149-9 | 0.210 |
-| residual depth | 250 | 62-131-7 | 0.310 |
-| residual depth | 400 | 74-107-19 | 0.370 |
-
-This is not a perfectly controlled comparison because the plain MLP had 5800
-self-play games, while `residual_depth.pt` has 3000. Still, the residual-depth
-checkpoint has not yet shown a clear advantage over the plain MLP.
-
-The next fair experiment is to continue the residual-depth checkpoint to a
-similar training budget before judging the architecture:
-
-```bash
-python scripts/train.py \
-  --resume checkpoints/residual_depth.pt \
-  --games 5800 \
-  --simulations 250 \
-  --epochs 1 \
-  --batched-mcts \
-  --eval-batch-size 8 \
-  --fast-game \
-  --opening-plies-min 0 \
-  --opening-plies-max 8 \
-  --replay-capacity 50000
-```
-
-Then rerun the same minimax evaluation table. If the residual model still lags
-after equal training, depth alone is probably not the right upgrade. The next
-controlled experiment would be width-only:
-
-$$
-\text{plain MLP, hidden size } 256.
-$$
+The progression across simulation budgets (100 → 250 → 400) shows whether extra search
+still helps the network.  If the win rate plateaus early, the network value head may be
+reliable enough to compensate for fewer rollouts; if it keeps climbing, the policy is
+still guiding search toward better lines.
